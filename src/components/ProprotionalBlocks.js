@@ -1,0 +1,285 @@
+import React, { useEffect, useRef, useMemo } from 'react';
+import * as d3 from 'd3';
+
+const ProportionalBlocks = ({
+    categories,
+    totalCounts,
+    onDataPointClick,
+    isLoading
+}) => {
+    const svgRef = useRef(null);
+    const tooltipRef = useRef(null);
+
+    const chartData = useMemo(() => {
+        if (!categories || Object.keys(categories).length === 0) {
+            return null;
+        }
+
+        const items = Object.entries(categories).map(([key, categoryData]) => {
+            const count = categoryData.count || 0;
+            return {
+                name: key.replace(/_/g, ' '),
+                value: count,
+                key: key,
+                rawData: categoryData
+            };
+        }).filter(item => item.value > 0);
+
+        return {
+            name: "root",
+            children: items
+        };
+    }, [categories]);
+
+    const getColorForValue = (value, maxValue, minValue) => {
+        const normalized = (value - minValue) / (maxValue - minValue || 1);
+        
+        if (normalized > 0.66) {
+            const intensity = 0.7 + (normalized - 0.66) * 0.9;
+            return `rgb(${Math.round(220 * intensity)}, ${Math.round(38 * intensity)}, ${Math.round(38 * intensity)})`;
+        } else if (normalized > 0.33) {
+            const intensity = 0.65 + (normalized - 0.33) * 1.05;
+            return `rgb(${Math.round(251 * intensity)}, ${Math.round(146 * intensity)}, ${Math.round(60 * intensity)})`;
+        } else {
+            const intensity = 0.5 + normalized * 0.7;
+            return `rgb(${Math.round(254 * intensity)}, ${Math.round(215 * intensity)}, ${Math.round(170 * intensity)})`;
+        }
+    };
+
+    const width = window.innerWidth * 0.78;
+    const height = window.innerHeight*1.4;
+
+
+    useEffect(() => {
+        if (!chartData || !svgRef.current) return;
+
+        d3.select(svgRef.current).selectAll("*").remove();
+
+        const svg = d3.select(svgRef.current)
+            .attr("viewBox", [0, 0, width, height])
+            .style("font", "14px sans-serif");
+
+        const tooltip = d3.select(tooltipRef.current);
+
+        const values = chartData.children.map(d => d.value);
+        const maxValue = Math.max(...values);
+        const minValue = Math.min(...values);
+
+        const root = d3.hierarchy(chartData)
+            .sum(d => d.value)
+            .sort((a, b) => b.value - a.value);
+
+        d3.treemap()
+            .size([width, height])
+            .padding(2)
+            .round(true)(root);
+
+        const zoom = d3.zoom()
+            .scaleExtent([1, 10])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+
+        svg.call(zoom);
+
+        const g = svg.append("g");
+
+        const cell = g.selectAll("g")
+            .data(root.leaves())
+            .join("g")
+            .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+        cell.append("rect")
+            .attr("width", d => d.x1 - d.x0)
+            .attr("height", d => d.y1 - d.y0)
+            .attr("fill", d => getColorForValue(d.value, maxValue, minValue))
+            .attr("stroke", "white")
+            .attr("stroke-width", 2)
+            .style("cursor", "pointer")
+            .on("mouseover", function(event, d) {
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .attr("opacity", 0.85);
+                
+                tooltip
+                    .style("opacity", 1)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 10) + "px")
+                    .html(`
+                        <div style="font-weight: bold; margin-bottom: 4px; text-transform: capitalize;">
+                            ${d.data.name}
+                        </div>
+                        <div>Count: ${d.value.toLocaleString()}</div>
+                        <div>Percentage: ${((d.value / root.value) * 100).toFixed(2)}%</div>
+                    `);
+            })
+            .on("mousemove", function(event) {
+                tooltip
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 10) + "px");
+            })
+            .on("mouseout", function() {
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .attr("opacity", 1);
+                
+                tooltip.style("opacity", 0);
+            })
+            .on("click", function(event, d) {
+                if (onDataPointClick) {
+                    onDataPointClick(null, null, {
+                        dataPointIndex: root.leaves().indexOf(d),
+                        selectedCategory: d.data.key,
+                        categoryData: d.data.rawData
+                    });
+                }
+            });
+
+        cell.append("clipPath")
+            .attr("id", (d, i) => `clip-${i}`)
+            .append("rect")
+            .attr("width", d => d.x1 - d.x0 - 4)
+            .attr("height", d => d.y1 - d.y0 - 4);
+
+        const text = cell.append("text")
+            .attr("clip-path", (d, i) => `url(#clip-${i})`)
+            .style("user-select", "none")
+            .style("pointer-events", "none");
+
+        const maxArea = d3.max(root.leaves(), d => (d.x1 - d.x0) * (d.y1 - d.y0));
+const fontScale = d3.scaleLinear().domain([0, maxArea]).range([10, 28]);
+const lengthScale = d3.scaleLinear().domain([0, maxArea]).range([10, 100]);
+const yScale = d3.scaleLinear().domain([0, maxArea]).range([12, 40]);
+
+text.append("tspan")
+    .attr("x", 4)
+    .attr("y", d => yScale((d.x1 - d.x0) * (d.y1 - d.y0)))
+    .attr("fill", "white")
+    .attr("font-weight", "bold")
+    .style("text-shadow", "0 1px 3px rgba(0,0,0,0.5)")
+    .style("font-size", d => `${fontScale((d.x1 - d.x0) * (d.y1 - d.y0))}px`)
+    .text(d => {
+        const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+        const maxLength = Math.floor(lengthScale(area));
+        const name = d.data.name;
+        return name.length > maxLength ? name.substring(0, maxLength) + "..." : name;
+    })
+    .style("text-transform", "capitalize");
+
+text.append("tspan")
+    .attr("x", 4)
+    .attr("y", d => {
+        const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+        return yScale(area) + fontScale(area) + 4;
+    })
+    .attr("fill", "white")
+    .attr("font-weight", "600")
+    .style("text-shadow", "0 1px 3px rgba(0,0,0,0.5)")
+    .style("font-size", d => `${fontScale((d.x1 - d.x0) * (d.y1 - d.y0)) * 0.8}px`)
+    .text(d => {
+        const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+        return area > maxArea * 0.05 ? `${((d.value / root.value) * 100).toFixed(1)}%` : "";
+    });
+
+
+    }, [chartData, onDataPointClick]);
+
+    if (!categories || Object.keys(categories).length === 0) {
+        return (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <h3>No Categories Found</h3>
+            </div>
+        );
+    }
+
+    if (!chartData) {
+        return (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <h3>No data available</h3>
+            </div>
+        );
+    }
+
+    return (
+        <div >
+            <div>
+                zoom in for better view. Click on blocks to filter data.
+            </div>
+            <div>
+            {isLoading && (
+                <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                    zIndex: 10
+                }}>
+                    <div style={{
+                        border: '4px solid #f3f3f3',
+                        borderTop: '4px solid #3498db',
+                        borderRadius: '50%',
+                        width: '40px',
+                        height: '40px',
+                        animation: 'spin 1s linear infinite'
+                    }}></div>
+                </div>
+            )}
+
+
+            <div style={{ 
+                maxWidth: '100vw', 
+                margin: '0 auto',
+                border: '1px solid #e0e0e0',
+                borderRadius: '4px',
+                overflow: 'hidden',
+                backgroundColor: '#ffffff'
+            }}>
+                <svg 
+                    ref={svgRef}
+                    style={{ 
+                        width: '100%', 
+                        height: 'auto',
+                        display: 'block'
+                    }}
+                />
+            </div>
+
+        
+            <div
+                ref={tooltipRef}
+                style={{
+                    position: 'absolute',
+                    opacity: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    color: 'white',
+                    padding: '8px 12px',
+                    borderRadius: '4px',
+                    pointerEvents: 'none',
+                    fontSize: '13px',
+                    zIndex: 1000,
+                    transition: 'opacity 0.2s',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                }}
+            />
+
+            <style>{`
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `}</style>
+        </div>
+        </div>
+      
+      
+    );
+};
+
+export default ProportionalBlocks;
