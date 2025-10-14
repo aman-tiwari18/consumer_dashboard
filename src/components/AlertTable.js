@@ -1,307 +1,279 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
+import  {useSearchHistory}from '../hooks/useSearchHistory';
 import {
-Box,
-Paper,
-Table,
-TableBody,
-TableCell,
-TableSortLabel,
-TableContainer,
-TableHead,
-TableRow,
-CircularProgress,
-Button
-} from '@mui/material'
-import {
-  TrendingUp as TrendingUpIcon,
-} from '@mui/icons-material';
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableSortLabel,
+  TableContainer,
+  TableHead,
+  TableRow,
+  CircularProgress,
+  Button
+} from '@mui/material';
+import { TrendingUp as TrendingUpIcon } from '@mui/icons-material';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-const CACHE_EXPIRATION = 24 * 60 * 60 * 1000; 
 
+const CACHE_EXPIRATION = 24 * 60 * 60 * 1000; // 24 hrs
 
 const AlertTable = (props) => {
-      const [alertData, setAlertData] = useState([]);
+  const navigate = useNavigate();
+
+  const {searchHistory} = useSearchHistory();
+
+  const [displayData, setDisplayData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [stats, setStats] = useState({
-    totalCategories: 0,
-    highAlerts: 0,
-    mediumAlerts: 0,
-    lowAlerts: 0
+  const [order, setOrder] = useState('desc');
+  const [orderBy, setOrderBy] = useState('');
+
+  const [cachedData, setCachedData] = useLocalStorage('categoryAlertData', {
+    data: null,
+    timestamp: null
   });
 
-    const navigate = useNavigate();
+  const isCacheValid = () => {
+    if (!cachedData.timestamp) return false;
+    const now = Date.now();
+    return (now - cachedData.timestamp) < CACHE_EXPIRATION;
+  };
 
+  // Determine what data type we have (alerts, state-wise, or company-wise)
+  const detectDataType = (data) => {
+    if (!data || data.length === 0) return null;
+    const first = data[0];
+    if (first.stateName) return 'state';
+    if (first.companyName) return 'company';
+    if (first.alertTitle) return 'alert';
+    if(first.categoryName) return 'category';
+    return 'unknown';
+  };
 
-  const [order, setOrder] = useState('desc');
-  const [orderBy, setOrderBy] = useState('increase_percentage');
+  const getValueKey = (type) => {
+    switch (type) {
+      case 'state': return 'counts';
+      case 'company': return 'counts';
+      case 'alert': return 'increasePercentage';
+      case 'category': return 'counts';
+      default: return '';
+    }
+  };
 
+  const getLabelKey = (type) => {
+    switch (type) {
+      case 'state': return 'stateName';
+      case 'company': return 'companyName';
+      case 'alert': return 'alertTitle';
+      case 'category': return 'categoryName';
+      default: return '';
+    }
+  };
+
+  const getColumnTitle = (type) => {
+    switch (type) {
+      case 'state': return 'Counts';
+      case 'company': return 'Counts';
+      case 'alert': return 'Increase %';
+      case 'category': return 'Counts';
+      default: return 'Value';
+    }
+  };
+
+//   const handleSeeMore = (title, searchHistory, navigate) => {
+//   if (title === 'High Alerts') {
+//     navigate('/category-alert');
+//   } else if (title === 'Categories') {
+//     navigate('/category-explorer');
+//   } else if (title === 'States') {
+//     const lastQuery = searchHistory?.length
+//       ? searchHistory[searchHistory.length - 1]
+//       : '';
+//     navigate('/semantic-search', { state: { lastQuery } });
+//   } else {
+//     console.warn('Unhandled table title:', title);
+//   }
+// };
+
+  // Sorting
   const handleSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
   };
 
-  const sortedData = [...alertData].sort((a, b) => {
-    if (orderBy === 'category') {
+  const sortedData = [...displayData].sort((a, b) => {
+    if (!orderBy) return 0;
+    if (typeof a[orderBy] === 'string') {
       return order === 'asc'
-        ? a.category.localeCompare(b.category)
-        : b.category.localeCompare(a.category);
-    } else if (orderBy === 'increase_percentage') {
-      return order === 'asc'
-        ? a.increase_percentage - b.increase_percentage
-        : b.increase_percentage - a.increase_percentage;
+        ? a[orderBy].localeCompare(b[orderBy])
+        : b[orderBy].localeCompare(a[orderBy]);
+    } else {
+      return order === 'asc' ? a[orderBy] - b[orderBy] : b[orderBy] - a[orderBy];
     }
-    return 0;
   });
 
-  
-    const sortAlertData = (data) => {
-      return [...data].sort((a, b) => {
-        const alertLevelA = getAlertLevel(a.increase_percentage);
-        const alertLevelB = getAlertLevel(b.increase_percentage);
-  
-        // Define priority order for alert levels
-        const priority = {
-          'high': 1,
-          'medium': 2,
-          'low': 3
-        };
-  
-        // Sort by priority first
-        if (priority[alertLevelA] !== priority[alertLevelB]) {
-          return priority[alertLevelA] - priority[alertLevelB];
-        }
-  
-        // If same priority, sort by percentage (descending)
-        return b.increase_percentage - a.increase_percentage;
-      });
-    };
-  
-    const [cachedData, setCachedData] = useLocalStorage('categoryAlertData', {
-      data: null,
-      timestamp: null
-    });
-  
-    const isCacheValid = () => {
-      if (!cachedData.timestamp) return false;
-      const now = Date.now();
-      return (now - cachedData.timestamp) < CACHE_EXPIRATION;
-    };
-  
-    const fetchCategoryAlerts = async (forceRefresh = false) => {
-      if (!forceRefresh && isCacheValid() && cachedData.data) {
-        const sortedData = sortAlertData(cachedData.data);
-        setAlertData(sortedData);
-        updateStats(sortedData);
-        // setAlertData(cachedData.data);
-        // updateStats(cachedData.data);
-        return;
-      }
-  
-      setLoading(true);
-      setError(null);
-  
-      try {
-        const response = await axios.post(
-          'https://cdis.iitk.ac.in/consumer_api/get_category_alert',
-          {
-            last_days: 84,
-            given_date: "2017-06-01",
-            value: 1,
-            CityName: "All",
-            stateName: "All",
-            complaintType: "All",
-            complaintMode: "All",
-            companyName: "All",
-            complaintStatus: "All",
-            threshold: 1.3,
-            complaint_numbers: ["NA"]
-          }
-        );
-  
-        const data = response.data;
-        const sortedData = sortAlertData(data);
-        setAlertData(sortedData);
-        updateStats(sortedData);
-  
-        setCachedData({
-          data: data,
-          timestamp: Date.now()
-        });
-      } catch (err) {
-        setError('Failed to fetch category alerts. ' + (err.response?.data?.message || err.message));
-        console.error('Error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    const updateStats = (data) => {
-      const totalCategories = data.length;
-      console.log('Updating stats with data:', data);
-      const highAlerts = data.filter(item => item.increase_percentage > 20).length;
-      const mediumAlerts = data.filter(item => item.increase_percentage > 10 && item.increase_percentage <= 20).length;
-      const lowAlerts = data.filter(item => item.increase_percentage <= 10).length;
-  
-      setStats({
-        totalCategories,
-        highAlerts,
-        mediumAlerts,
-        lowAlerts
-      });
-    };
-  
-    useEffect(() => {
-      fetchCategoryAlerts();
-    }, []);
-  
-    const getAlertLevel = (percentage) => {
-      if (percentage > 20) return 'high';
-      if (percentage > 10) return 'medium';
-      return 'low';
-    };
-  
-    const getAlertColor = (level) => {
-      switch (level) {
-        case 'high': return 'error';
-        case 'medium': return 'warning';
-        default: return 'success';
-      }
-    };
+  const getAlertColor = (val) => {
+    if (val > 20) return 'error.main';
+    if (val > 10) return 'warning.main';
+    return 'success.main';
+  };
 
+
+  useEffect(() => {
+    if (props.data) {
+      setDisplayData(props.data);
+      const type = detectDataType(props.data);
+      setOrderBy(getValueKey(type));
+    }
+  }, [props.data]);
+
+  const type = detectDataType(displayData);
+  const labelKey = getLabelKey(type);
+  const valueKey = getValueKey(type);
+  const valueTitle = getColumnTitle(type);
 
   return (
     <Box sx={{ p: 0 }}>
-  <TableContainer
-    component={Paper}
-    sx={{
-    position: 'relative',
-    minHeight: '100px',
-    maxHeight: '400px',
-    overflowY: 'auto',
-    }}
->
-    {loading && (
-        <Box
+      <TableContainer
+        component={Paper}
+        sx={{
+          position: 'relative',
+          minHeight: '100px',
+          maxHeight: '400px',
+          overflowY: 'auto',
+        }}
+      >
+        {loading && (
+          <Box
             sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(255, 255, 255, 0.7)',
-            zIndex: 1,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              zIndex: 1,
             }}
-        >
+          >
             <CircularProgress size={20} />
-        </Box>
-    )}
+          </Box>
+        )}
 
-    <Table size="small" sx={{ fontSize: '0.8rem' }}> 
-      <TableHead>
-        <TableRow>
-          <TableCell
-            sx={{ fontSize: '0.8rem', fontWeight: 600 }}
-            sortDirection={orderBy === 'category' ? order : false}
-          >
-            {/* <TableSortLabel
-            active={orderBy === 'category'}
-            direction={orderBy === 'category' ? order : 'asc'}
-            onClick={() => handleSort('category')}
-            > */}
-            {props.title}
-            {/* </TableSortLabel>/ */}
-        </TableCell>
-
-        <TableCell
-            sx={{ fontSize: '0.8rem', fontWeight: 600 }}
-            sortDirection={orderBy === 'increase_percentage' ? order : false}
-          >
-            <TableSortLabel
-              active={orderBy === 'increase_percentage'}
-              direction={orderBy === 'increase_percentage' ? order : 'asc'}
-              onClick={() => handleSort('increase_percentage')}
-            >
-              Increase %
-            </TableSortLabel>
-          </TableCell>
-        </TableRow>
-      </TableHead>
-
-      <TableBody>
-        {sortedData.slice(0, 5).map((row) => {
-          const alertLevel = getAlertLevel(row.increase_percentage);
-          return (
-            <TableRow
-              key={row.category}
-              sx={{
-                '&:hover': { backgroundColor: '#f9f9f9' },
-              }}
-            >
+        <Table size="small" sx={{ fontSize: '0.8rem' }}>
+          <TableHead>
+            <TableRow>
               <TableCell
-                component="th"
-                scope="row"
-                sx={{ fontSize: '0.8rem', py: 2 }}
+                sx={{ fontSize: '0.8rem', fontWeight: 600 }}
+                sortDirection={orderBy === labelKey ? order : false}
               >
-                {row.category}
+                {props.title}
               </TableCell>
 
               <TableCell
                 sx={{
                   fontSize: '0.8rem',
-                  py: 2,
-                  color: `${getAlertColor(alertLevel)}.main`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
+                  fontWeight: 600,
+                  textAlign: 'right',        // ✅ align header text to right
+                  paddingRight: 2,
                 }}
+                sortDirection={orderBy === valueKey ? order : false}
               >
-                <TrendingUpIcon sx={{ fontSize: 14 }} />
-                {row.increase_percentage.toFixed(1)}%
+                <TableSortLabel
+                  active={orderBy === valueKey}
+                  direction={orderBy === valueKey ? order : 'asc'}
+                  onClick={() => handleSort(valueKey)}
+                >
+                  {valueTitle}
+                </TableSortLabel>
               </TableCell>
             </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+          </TableHead>
 
-    {sortedData.length > 5 && (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          pr: 2,
-          pb: 1,
-        }}
-      >
-        <Button
-          variant="text"
-          size="small"
-          sx={{ fontSize: '0.7rem', textTransform: 'none', paddingRight: 4 }}
-          onClick={() => {
-            if(props.title === "High Alerts"){
-              navigate('/category-alert');
-            } else if (props.title === "Categories"){
-              navigate('/category-explorer');
-            }
-          }}
-        >
-          See more...
-        </Button>
-      </Box>
-    )}
-  </TableContainer>
-</Box>
+          <TableBody>
+            {sortedData.slice(0, 5).map((row, idx) => (
+              <TableRow
+                key={idx}
+                sx={{
+                  '&:hover': { backgroundColor: '#f9f9f9' },
+                }}
+              >
+                <TableCell
+                  sx={{
+                    fontSize: '0.8rem',
+                    py: 2,
+                    maxWidth: 160,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {row[labelKey]}
+                </TableCell>
+
+                <TableCell
+                  sx={{
+                    fontSize: '0.8rem',
+                    py: 2,
+                    display: 'flex',
+                    alignItems: 'center',     
+                    justifyContent: 'flex-end', 
+                    gap: 1,
+                    color: type === 'alert' ? getAlertColor(row[valueKey]) : 'text.primary',
+                  }}
+                >
+                  {type === 'alert' && <TrendingUpIcon sx={{ fontSize: 14, flexShrink: 0 }} />}
+                  <span>{row[valueKey]}{type === 'alert' && '%'}</span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
 
-)
-}
+        {sortedData.length > 5 && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              pr: 2,
+              pb: 1,
+            }}
+          >
+            <Button
+              variant="text"
+              size="small"
+              sx={{ fontSize: '0.8rem', textTransform: 'none', paddingRight: 0 }}
+              onClick={() => {
+                if (props.title === 'High Alerts') {
+                  navigate('/category-alert');
+                } else if (props.title === 'Categories') {
+                  navigate('/category-explorer');
+                } else if (props.title === 'States') {
+                  const lastQuery = searchHistory?.length
+                    ? searchHistory[searchHistory.length - 1]
+                    : '';
+                  // console.log("lastQuery", lastQuery);
+                  // localStorage.setItem('lastQuery', lastQuery?.params?.query);
+                  navigate("/semantic-search", { state: { lastQuery : lastQuery?.params?.query } });
+                } else {
+                  console.warn('Unhandled table title:', props.title);
+                }
+              }}
+            >
+              See more...
+            </Button>
 
-export default AlertTable
+          </Box>
+        )}
+      </TableContainer>
+    </Box>
+  );
+};
+
+export default AlertTable;

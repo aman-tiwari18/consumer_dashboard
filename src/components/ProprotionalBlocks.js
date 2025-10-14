@@ -15,15 +15,16 @@ const ProportionalBlocks = ({
             return null;
         }
 
-        const items = Object.entries(categories).map(([key, categoryData]) => {
-            const count = categoryData.count || 0;
-            return {
-                name: key.replace(/_/g, ' '),
-                value: count,
-                key: key,
-                rawData: categoryData
-            };
-        }).filter(item => item.value > 0);
+       const items = Object.entries(categories)
+        .map(([key, categoryData], idx) => ({
+            name: key.replace(/_/g, ' '),
+            value: categoryData.count || 0,
+            key: key,
+            rawData: categoryData,
+            index: idx 
+        }))
+        .filter(item => item.value > 0);
+
 
         return {
             name: "root",
@@ -127,10 +128,10 @@ const ProportionalBlocks = ({
                 
                 tooltip.style("opacity", 0);
             })
-            .on("click", function(event, d) {
+             .on("click", function(event, d) {
                 if (onDataPointClick) {
                     onDataPointClick(null, null, {
-                        dataPointIndex: root.leaves().indexOf(d),
+                        dataPointIndex: d.data.index,
                         selectedCategory: d.data.key,
                         categoryData: d.data.rawData
                     });

@@ -71,6 +71,16 @@ const Dashboard = () => {
 
 const totalComplaints = categories? Object.values(categories).reduce((sum, cat) => sum + (cat.count || 0), 0): 0;
 const totalCategories = categories ? Object.keys(categories).length : 0;
+const formatCategories = (categories) => {
+  if (!categories || typeof categories !== 'object') return [];
+
+  return Object.entries(categories).map(([key, value]) => ({
+    categoryName: key,
+    counts: value.count || 0,
+  }));
+};
+
+const categoriesData = formatCategories(categories);
 
 
     return (
@@ -103,7 +113,7 @@ const totalCategories = categories ? Object.keys(categories).length : 0;
                 </div>
 
                 <div style={{ flex: 1 }}>
-                    <AlertComponent totalCount={totalCounts || totalComplaints} categoriesCount = {totalCategories} />
+                    <AlertComponent totalCount={totalCounts || totalComplaints} categoriesCount = {totalCategories} data= {categoriesData} />
                 </div>
             </div>
         </Box>

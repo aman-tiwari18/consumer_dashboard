@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import AlertData from "../resources/alerts_with_percentage.json"
+import stateData from "../resources/state_with_complaints.json"
+import companiesData from "../resources/companies_with_complaints.json"
 
 import {
   Box,
@@ -26,6 +29,7 @@ const AlertComponent = (props) => {
     lowAlerts: 0
   });
 
+  console.log('props categoriesCount:', props.data);
 
 
   const [order, setOrder] = useState('asc');
@@ -56,19 +60,16 @@ const AlertComponent = (props) => {
         const alertLevelA = getAlertLevel(a.increase_percentage);
         const alertLevelB = getAlertLevel(b.increase_percentage);
   
-        // Define priority order for alert levels
         const priority = {
           'high': 1,
           'medium': 2,
           'low': 3
         };
   
-        // Sort by priority first
         if (priority[alertLevelA] !== priority[alertLevelB]) {
           return priority[alertLevelA] - priority[alertLevelB];
         }
   
-        // If same priority, sort by percentage (descending)
         return b.increase_percentage - a.increase_percentage;
       });
     };
@@ -256,18 +257,21 @@ const AlertComponent = (props) => {
 
         <Grid container rowSpacing={1} padding={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
           <Grid size={6}>
-          <AlertTable title= "High Alerts"/>
+          <AlertTable title= "High Alerts" data = {AlertData}/>
           </Grid>
+
           <Grid size={6}>
-          <AlertTable title= "Categories"/>
+          <AlertTable title= "Categories" data = {props.data}/>
+          </Grid>
+
+          <Grid size={6}>
+          <AlertTable title= "Companies" data = {companiesData}/>
+          </Grid>
+
+          <Grid size={6}>
+          <AlertTable title= "States" data = {stateData}/>
+          </Grid>
           
-          </Grid>
-          <Grid size={6}>
-          <AlertTable title= "Companies"/>
-          </Grid>
-          <Grid size={6}>
-          <AlertTable title= "States"/>
-          </Grid>
       </Grid>
         </Box>
       </Fade>

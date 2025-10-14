@@ -30,8 +30,11 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Search as SearchIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { useSearchHistory } from '../hooks/useSearchHistory';
 import 'leaflet/dist/leaflet.css';
 import IndiaMap from '../components/IndiaMap';
+import { useSearchParams , useLocation } from 'react-router-dom';
+import { id } from 'date-fns/locale';
 // import MapLegend from '../components/MapLegend';
 
 const INITIAL_FILTERS = {
@@ -55,6 +58,7 @@ const SemanticSearch = () => {
     const [heatmapData, setHeatmapData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const location = useLocation();
 
     const handleFilterChange = (name, value) => {
         setFilters(prev => ({
@@ -118,8 +122,21 @@ const SemanticSearch = () => {
     };
 
     useEffect(() => {
-        fetchData();
+        const lastQuery = location?.state?.lastQuery || '';
+        if (lastQuery) {
+            setFilters(prev => ({
+                ...prev,
+                query: lastQuery
+            }));
+            fetchData();
+        }
     }, []);
+
+
+    useEffect(() => {
+             fetchData(); 
+    }, [filters?.query]);
+
 
     return (
         <Fade in timeout={500}>
