@@ -1,11 +1,18 @@
 // hooks/useApiData.js
-import { useState, useCallback } from 'react';
+import { useState, useCallback , useEffect } from 'react';
 import { apiService } from '../services/apiService';
 
-export const useApiData = () => {
+export const useApiData = (defaultStateData = null) => {
     const [totalCounts, setTotalCounts] = useState(0);
     const [userData, setUserData] = useState([]);
+    const [stateData, setStateData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (defaultStateData && stateData.length === 0) {
+            setStateData(defaultStateData);
+        }
+    }, [defaultStateData]);
 
     const fetchCategories = useCallback(async (prompt, setCategories) => {
         try {
@@ -49,15 +56,57 @@ export const useApiData = () => {
         }
     }, []);
 
+    const formatStateName = (name) => {
+    if (!name) return name;
+    return name
+        .toLowerCase()
+        .replace(/&/g, "and")
+        .replace(/\s+/g, " ")
+        .split(" ")
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    };
+
+
+    const fetchSpatialData = useCallback(async (filters) => {
+        try {
+            const params = {
+                query: filters.query,
+                startDate: filters.startDate,
+                endDate: filters.endDate,
+                threshold: filters.threshold,
+                value: filters.value,
+                complaintNumbers: filters.complaintNumbers
+            };
+
+            const data = await apiService.fetchSpatialData(params);
+
+            const formattedData = Object.entries(data).map(([state, count]) => ({
+                stateName: formatStateName(state),
+                counts: count
+            }));
+            setStateData(formattedData);
+            return formattedData;
+        } catch (error) {
+            console.error("Error fetching spatial data:", error);
+            return []
+        }
+    }, [defaultStateData]);
+
+
+
     return {
         totalCounts,
         setTotalCounts,
         userData,
+        setStateData,
+        stateData,
         setUserData,
         isLoading,
         setIsLoading,
         fetchCategories,
         fetchSemanticRCA,
+        fetchSpatialData,
         fetchUserData
     };
 };

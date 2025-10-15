@@ -32,7 +32,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const CACHE_EXPIRATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-const CategoryAlert = () => {
+const AlertPage = () => {
   const [alertData, setAlertData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -464,7 +464,7 @@ const CategoryAlert = () => {
           </Table>
         </TableContainer>
 
-                <Paper sx={{ p: 3, mb: 3, position: 'relative' }}>
+        <Paper sx={{ p: 3, mb: 3, position: 'relative' }}>
           <Typography variant="h6" gutterBottom>
             Per Hour Complaints Comparison
           </Typography>
@@ -496,4 +496,4 @@ const CategoryAlert = () => {
   );
 };
 
-export default CategoryAlert;
+export default AlertPage;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useRef} from 'react';
 import axios from 'axios';
 import {
     Box,
@@ -30,10 +30,10 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Search as SearchIcon, Refresh as RefreshIcon } from '@mui/icons-material';
-import { useSearchHistory } from '../hooks/useSearchHistory';
+// import {useSearchHistory } from '../hooks/useSearchHistory';
 import 'leaflet/dist/leaflet.css';
 import IndiaMap from '../components/IndiaMap';
-import { useSearchParams , useLocation } from 'react-router-dom';
+import { useSearchParams , useLocation ,useNavigate, useLoaderData } from 'react-router-dom';
 import { id } from 'date-fns/locale';
 // import MapLegend from '../components/MapLegend';
 
@@ -58,6 +58,7 @@ const SemanticSearch = () => {
     const [heatmapData, setHeatmapData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
     const location = useLocation();
 
     const handleFilterChange = (name, value) => {
@@ -121,21 +122,74 @@ const SemanticSearch = () => {
         }
     };
 
-    useEffect(() => {
-        const lastQuery = location?.state?.lastQuery || '';
-        if (lastQuery) {
-            setFilters(prev => ({
-                ...prev,
-                query: lastQuery
-            }));
-            fetchData();
+    const fetchData2 = async (currentFilters) => {
+        setLoading(true);
+        setError(null);
+
+        const requestBody = {
+            query: currentFilters.query,
+            start_date: currentFilters.startDate.toISOString().split('T')[0],
+            end_date: currentFilters.endDate.toISOString().split('T')[0],
+            value: currentFilters.value,
+            CityName: currentFilters.CityName,
+            stateName: currentFilters.stateName,
+            complaintType: currentFilters.complaintType,
+            complaintMode: currentFilters.complaintMode,
+            companyName: currentFilters.companyName,
+            complaintStatus: currentFilters.complaintStatus,
+            threshold: currentFilters.threshold,
+            complaint_numbers: currentFilters.complaint_numbers
+        };
+
+        try {
+            const [searchResponse, heatmapResponse] = await Promise.all([
+                axios.post('https://cdis.iitk.ac.in/consumer_api/search', {
+                    ...requestBody,
+                    skip: 0,
+                    size: 100
+                }),
+                axios.post('https://cdis.iitk.ac.in/consumer_api/get_spatial_analysis_data',
+                    requestBody
+                )
+            ]);
+
+            console.log("Search Response:", heatmapResponse.data);
+            setSearchResults(searchResponse.data);
+            setHeatmapData(heatmapResponse.data);
+
+        } catch (err) {
+            setError('Failed to fetch data: ' + err.message);
+        } finally {
+            setLoading(false);
         }
-    }, []);
+    };
 
 
     useEffect(() => {
-             fetchData(); 
-    }, [filters?.query]);
+        const queryFromNav = location.state?.lastQuery;
+        console.log("queryState", queryFromNav)
+        let initialQuery = ''; 
+
+        if (queryFromNav !== undefined) {
+            initialQuery = queryFromNav;
+        } else {
+            try {
+                const storedData = localStorage.getItem('lastQuery');
+                initialQuery = JSON.parse(storedData)?.params?.query || '';
+            } catch (error) {
+                console.error('Error reading from localStorage:', error);
+            }
+        }
+        
+        const initialFilters = { 
+            ...filters, 
+            query: initialQuery 
+        };
+
+        setFilters(initialFilters);
+        fetchData2(initialFilters);
+
+    }, []);
 
 
     return (

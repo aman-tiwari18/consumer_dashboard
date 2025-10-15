@@ -261,7 +261,7 @@ const AlertComponent = (props) => {
           </Grid>
 
           <Grid size={6}>
-          <AlertTable title= "Categories" data = {props.data}/>
+          <AlertTable title= "Categories" data = {props.categoryData}/>
           </Grid>
 
           <Grid size={6}>
@@ -269,9 +269,9 @@ const AlertComponent = (props) => {
           </Grid>
 
           <Grid size={6}>
-          <AlertTable title= "States" data = {stateData}/>
+          <AlertTable title= "States" data = {props.stateData}/>
           </Grid>
-          
+
       </Grid>
         </Box>
       </Fade>

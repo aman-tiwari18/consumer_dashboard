@@ -245,29 +245,35 @@ const AlertTable = (props) => {
               pb: 1,
             }}
           >
-            <Button
-              variant="text"
-              size="small"
-              sx={{ fontSize: '0.8rem', textTransform: 'none', paddingRight: 0 }}
-              onClick={() => {
-                if (props.title === 'High Alerts') {
-                  navigate('/category-alert');
-                } else if (props.title === 'Categories') {
-                  navigate('/category-explorer');
-                } else if (props.title === 'States') {
-                  const lastQuery = searchHistory?.length
-                    ? searchHistory[searchHistory.length - 1]
-                    : '';
-                  // console.log("lastQuery", lastQuery);
-                  // localStorage.setItem('lastQuery', lastQuery?.params?.query);
-                  navigate("/semantic-search", { state: { lastQuery : lastQuery?.params?.query } });
+          <Button
+            variant="text"
+            size="small"
+            sx={{ fontSize: '0.8rem', textTransform: 'none', paddingRight: 0 }}
+            onClick={() => {
+              if (props.title === 'High Alerts') {
+                navigate('/alert');
+              } else if (props.title === 'Categories') {
+                navigate('/category-explorer');
+              } else if (props.title === 'States') {
+                if (searchHistory?.length > 0) {
+                  const lastQuery = searchHistory[searchHistory.length - 1];
+                  const queryString = lastQuery?.params?.query || '';
+                  
+                  localStorage.setItem('lastQuery', JSON.stringify(lastQuery));
+                  navigate("/semantic-search", { 
+                    state: { lastQuery: queryString } 
+                  });
                 } else {
-                  console.warn('Unhandled table title:', props.title);
+                  console.warn('No search history available');
+                  navigate("/semantic-search", { state: { lastQuery: '' } });
                 }
-              }}
-            >
-              See more...
-            </Button>
+              } else {
+                console.warn('Unhandled table title:', props.title);
+              }
+            }}
+          >
+            See more...
+          </Button>
 
           </Box>
         )}

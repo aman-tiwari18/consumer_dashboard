@@ -7,6 +7,7 @@ import SearchHistory from '../components/SearchHistory';
 import { useCategories } from '../hooks/useCategories';
 import { useFilters } from '../hooks/useFilters';
 import { useApiData } from '../hooks/useApiData';
+import { useStateData } from '../hooks/useStateData';
 import { useSearchHistory } from '../hooks/useSearchHistory';
 import { useDataPointHandler } from '../hooks/useDataPointHandler';
 import { useHistoryHandler } from '../hooks/useHistoryHandler';
@@ -16,6 +17,7 @@ import ProportionalBlocks from '../components/ProprotionalBlocks';
 
 const Dashboard = () => {
     const { categories, setCategories } = useCategories();
+    const {defaultStateData}  = useStateData();
     const { filters, handleFilterChange, updateFilters } = useFilters();
     const { searchHistory, saveToHistory, clearHistory, deleteHistoryItem } = useSearchHistory();
     const {
@@ -26,22 +28,26 @@ const Dashboard = () => {
         setIsLoading,
         fetchCategories: fetchCategoriesApi,
         fetchSemanticRCA,
-        fetchUserData
-    } = useApiData();
+        fetchUserData,
+        fetchSpatialData,
+        stateData,
+        setStateData,
+    } = useApiData(defaultStateData);
+    console.log({stateData});
+    console.log({defaultStateData})
 
-    // Enhanced fetch functions
     const fetchCategories = async (prompt) => {
         const { updatedData, totalCount} = await fetchCategoriesApi(prompt, setCategories);
-        setCategories(updatedData);      // update categories state
-        setTotalCounts(totalCount);      // update total complaints
+        setCategories(updatedData);      
+        setTotalCounts(totalCount);      
     };
 
-    // Action handlers
     const { handleDataPointClick } = useDataPointHandler({
         categories,
         filters,
         handleFilterChange,
         fetchSemanticRCA,
+        fetchSpatialData,
         fetchUserData,
         fetchCategories,
         saveToHistory,
@@ -52,6 +58,7 @@ const Dashboard = () => {
         filters,
         updateFilters,
         fetchSemanticRCA,
+        fetchSpatialData,
         fetchUserData,
         fetchCategories,
         setTotalCounts,
@@ -63,24 +70,26 @@ const Dashboard = () => {
         updateFilters,
         fetchSemanticRCA,
         fetchUserData,
+        fetchSpatialData,
         fetchCategories,
         saveToHistory,
         totalCounts,
+        stateData,
         setIsLoading
     });
 
-const totalComplaints = categories? Object.values(categories).reduce((sum, cat) => sum + (cat.count || 0), 0): 0;
-const totalCategories = categories ? Object.keys(categories).length : 0;
-const formatCategories = (categories) => {
-  if (!categories || typeof categories !== 'object') return [];
+    const totalComplaints = categories? Object.values(categories).reduce((sum, cat) => sum + (cat.count || 0), 0): 0;
+    const totalCategories = categories ? Object.keys(categories).length : 0;
+    const formatCategories = (categories) => {
+    if (!categories || typeof categories !== 'object') return [];
 
-  return Object.entries(categories).map(([key, value]) => ({
-    categoryName: key,
-    counts: value.count || 0,
-  }));
-};
+    return Object.entries(categories).map(([key, value]) => ({
+        categoryName: key,
+        counts: value.count || 0,
+    }));
+    };
 
-const categoriesData = formatCategories(categories);
+    const categoriesData = formatCategories(categories);
 
 
     return (
@@ -113,7 +122,12 @@ const categoriesData = formatCategories(categories);
                 </div>
 
                 <div style={{ flex: 1 }}>
-                    <AlertComponent totalCount={totalCounts || totalComplaints} categoriesCount = {totalCategories} data= {categoriesData} />
+                    <AlertComponent 
+                    totalCount={totalCounts || totalComplaints} 
+                    categoriesCount = {totalCategories}
+                    categoryData= {categoriesData}
+                    stateData = {stateData} 
+                    />
                 </div>
             </div>
         </Box>

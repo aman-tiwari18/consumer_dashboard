@@ -5,6 +5,7 @@ export const useHistoryHandler = ({
     filters,
     updateFilters,
     fetchSemanticRCA,
+    fetchSpatialData,
     fetchUserData,
     fetchCategories,
     setTotalCounts,
@@ -27,6 +28,7 @@ export const useHistoryHandler = ({
                 ...filters,
                 query: params.query
             });
+            await fetchSpatialData({ ...filters, query: params.query });
 
             await fetchUserData(params.complaint_numbers);
             await fetchCategories(params.query);
@@ -40,6 +42,7 @@ export const useHistoryHandler = ({
         filters,
         updateFilters,
         fetchSemanticRCA,
+        fetchSpatialData,
         fetchUserData,
         fetchCategories,
         setTotalCounts,

@@ -7,10 +7,12 @@ export const useApplyFilters = ({
     filters,
     updateFilters,
     fetchSemanticRCA,
+    fetchSpatialData,
     fetchUserData,
     fetchCategories,
     saveToHistory,
     totalCounts,
+    stateData,
     setIsLoading
 }) => {
     const handleApplyFilters = useCallback(async () => {
@@ -27,6 +29,7 @@ export const useApplyFilters = ({
             }
 
             updateFilters({ complaintNumbers });
+            await fetchSpatialData({ ...filters, query });
             await fetchCategories(query);
 
             const searchParams = {
@@ -42,10 +45,12 @@ export const useApplyFilters = ({
         filters,
         updateFilters,
         fetchSemanticRCA,
+        fetchSpatialData,
         fetchUserData,
         fetchCategories,
         saveToHistory,
         totalCounts,
+        stateData,
         setIsLoading
     ]);
 

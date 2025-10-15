@@ -1,6 +1,6 @@
 // Updated App.js - Main Router Component
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate , useLocation} from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 
@@ -11,12 +11,13 @@ import Layout from './components/Layout';
 // import Dashboard from './pages/Dashboard';
 import CategoryExplorer from './pages/CategoryExplorer';
 import CategoryAlert from './pages/CategoryAlert';
-import SemanticSearch from './pages/SemanticSearch';
+import SemanticSearch from './pages/SemanticSearch'
 // import PlaceholderPage from './pages/PlaceholderPage';
 
 // Global CSS
 import './App.css';
 import Dashboard from './pages/Dashboard';
+import AlertPage from './pages/AlertPage';
 
 const theme = createTheme({
     palette: {
@@ -63,6 +64,7 @@ const theme = createTheme({
 });
 
 function App() {
+         const location = useLocation();
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
@@ -75,8 +77,9 @@ function App() {
                     <Route path="/" element={<CategoryExplorer />} />
                     <Route path="/category-explorer" element={<CategoryExplorer />} />
                     <Route path="/category-alert" element={<CategoryAlert />} />
-                    <Route path="/semantic-search" element={<SemanticSearch />} />
+                    <Route path="/semantic-search"  element={<SemanticSearch key={location.key} /> } />
                     <Route path="/dashboard" element={<Dashboard/>} />
+                    <Route path= "/alert" element = {<AlertPage/>}/>
 
                     {/* Placeholder Pages */}
                     {/* <Route

@@ -7,6 +7,7 @@ export const useDataPointHandler = ({
     filters,
     handleFilterChange,
     fetchSemanticRCA,
+    fetchSpatialData,
     fetchUserData,
     fetchCategories,
     saveToHistory,
@@ -28,7 +29,8 @@ export const useDataPointHandler = ({
                 await fetchUserData(complaintNumbers);
                 handleFilterChange('complaintNumbers', complaintNumbers);
             }
-
+            
+            await fetchSpatialData({ ...filters, query: categoryData[0] });
             await fetchCategories(categoryData[1].prompt);
 
             const searchParams = {

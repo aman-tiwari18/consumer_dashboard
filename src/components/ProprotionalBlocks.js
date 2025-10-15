@@ -34,18 +34,21 @@ const ProportionalBlocks = ({
 
     const getColorForValue = (value, maxValue, minValue) => {
         const normalized = (value - minValue) / (maxValue - minValue || 1);
-        
         if (normalized > 0.66) {
-            const intensity = 0.7 + (normalized - 0.66) * 0.9;
-            return `rgb(${Math.round(220 * intensity)}, ${Math.round(38 * intensity)}, ${Math.round(38 * intensity)})`;
+            const intensity = 0.6 + (normalized - 0.66) * 0.6;
+            return `rgb(${Math.round(255 * intensity)}, ${Math.round(120 * intensity)}, ${Math.round(120 * intensity)})`; 
+        
         } else if (normalized > 0.33) {
-            const intensity = 0.65 + (normalized - 0.33) * 1.05;
-            return `rgb(${Math.round(251 * intensity)}, ${Math.round(146 * intensity)}, ${Math.round(60 * intensity)})`;
+            const intensity = 0.5 + (normalized - 0.33) * 0.8;
+            return `rgb(${Math.round(130 * intensity)}, ${Math.round(170 * intensity)}, ${Math.round(255 * intensity)})`;
+            
         } else {
-            const intensity = 0.5 + normalized * 0.7;
-            return `rgb(${Math.round(254 * intensity)}, ${Math.round(215 * intensity)}, ${Math.round(170 * intensity)})`;
+            const intensity = 0.4 + normalized * 0.6;
+            return `rgb(${Math.round(255 * intensity)}, ${Math.round(235 * intensity)}, ${Math.round(180 * intensity)})`;
+            
         }
     };
+
 
     const width = window.innerWidth * 0.78;
     const height = window.innerHeight*1.4;
@@ -150,39 +153,39 @@ const ProportionalBlocks = ({
             .style("pointer-events", "none");
 
         const maxArea = d3.max(root.leaves(), d => (d.x1 - d.x0) * (d.y1 - d.y0));
-const fontScale = d3.scaleLinear().domain([0, maxArea]).range([10, 28]);
-const lengthScale = d3.scaleLinear().domain([0, maxArea]).range([10, 100]);
-const yScale = d3.scaleLinear().domain([0, maxArea]).range([12, 40]);
+        const fontScale = d3.scaleLinear().domain([0, maxArea]).range([10, 28]);
+        const lengthScale = d3.scaleLinear().domain([0, maxArea]).range([10, 100]);
+        const yScale = d3.scaleLinear().domain([0, maxArea]).range([12, 40]);
 
-text.append("tspan")
-    .attr("x", 4)
-    .attr("y", d => yScale((d.x1 - d.x0) * (d.y1 - d.y0)))
-    .attr("fill", "white")
-    .attr("font-weight", "bold")
-    .style("text-shadow", "0 1px 3px rgba(0,0,0,0.5)")
-    .style("font-size", d => `${fontScale((d.x1 - d.x0) * (d.y1 - d.y0))}px`)
-    .text(d => {
-        const area = (d.x1 - d.x0) * (d.y1 - d.y0);
-        const maxLength = Math.floor(lengthScale(area));
-        const name = d.data.name;
-        return name.length > maxLength ? name.substring(0, maxLength) + "..." : name;
-    })
-    .style("text-transform", "capitalize");
+        text.append("tspan")
+            .attr("x", 4)
+            .attr("y", d => yScale((d.x1 - d.x0) * (d.y1 - d.y0)))
+            .attr("fill", "white")
+            .attr("font-weight", "bold")
+            .style("text-shadow", "0 1px 3px rgba(0,0,0,0.5)")
+            .style("font-size", d => `${fontScale((d.x1 - d.x0) * (d.y1 - d.y0))}px`)
+            .text(d => {
+                const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+                const maxLength = Math.floor(lengthScale(area));
+                const name = d.data.name;
+                return name.length > maxLength ? name.substring(0, maxLength) + "..." : name;
+            })
+            .style("text-transform", "capitalize");
 
-text.append("tspan")
-    .attr("x", 4)
-    .attr("y", d => {
-        const area = (d.x1 - d.x0) * (d.y1 - d.y0);
-        return yScale(area) + fontScale(area) + 4;
-    })
-    .attr("fill", "white")
-    .attr("font-weight", "600")
-    .style("text-shadow", "0 1px 3px rgba(0,0,0,0.5)")
-    .style("font-size", d => `${fontScale((d.x1 - d.x0) * (d.y1 - d.y0)) * 0.8}px`)
-    .text(d => {
-        const area = (d.x1 - d.x0) * (d.y1 - d.y0);
-        return area > maxArea * 0.05 ? `${((d.value / root.value) * 100).toFixed(1)}%` : "";
-    });
+        text.append("tspan")
+            .attr("x", 4)
+            .attr("y", d => {
+                const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+                return yScale(area) + fontScale(area) + 4;
+            })
+            .attr("fill", "white")
+            .attr("font-weight", "600")
+            .style("text-shadow", "0 1px 3px rgba(0,0,0,0.5)")
+            .style("font-size", d => `${fontScale((d.x1 - d.x0) * (d.y1 - d.y0)) * 0.8}px`)
+            .text(d => {
+                const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+                return area > maxArea * 0.05 ? `${((d.value / root.value) * 100).toFixed(1)}%` : "";
+            });
 
 
     }, [chartData, onDataPointClick]);
