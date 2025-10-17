@@ -130,7 +130,7 @@ const AlertPage = () => {
         'https://cdis.iitk.ac.in/consumer_api/get_category_alert',
         {
           last_days: 84,
-          given_date: "2017-06-01",
+          given_date: "2025-07-01",
           value: 1,
           CityName: "All",
           stateName: "All",
