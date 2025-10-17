@@ -36,13 +36,13 @@ const SIDEBAR_WIDTH_EXPANDED = 280;
 const SIDEBAR_WIDTH_COLLAPSED = 72;
 
 const navigationItems = [
-    // {
-    //     id: 'dashboard',
-    //     label: 'Dashboard',
-    //     icon: <DashboardIcon />,
-    //     path: '/dashboard',
-    //     group: 'main'
-    // },
+    {
+        id: 'dashboard',
+        label: 'Dashboard',
+        icon: <DashboardIcon />,
+        path: '/dashboard',
+        group: 'main'
+    },
     {
         id: 'category-explorer',
         label: 'Category Explorer',

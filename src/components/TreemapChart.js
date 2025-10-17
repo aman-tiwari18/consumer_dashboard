@@ -20,7 +20,7 @@ const TreemapChart = ({
         series: [{
             data: categories ? Object.entries(categories).map(([key, value]) => ({
                 x: key.replace(/_/g, ' '),
-                y: value?.prompt.length
+                y: value?.prompt?.length
             })) : []
         }],
         plotOptions: {

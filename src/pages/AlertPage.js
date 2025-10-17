@@ -1,6 +1,11 @@
 // pages/CategoryAlert.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useMemo} from 'react';
 import axios from 'axios';
+import { DataGrid } from '@mui/x-data-grid';
+import SearchHistory from '../components/SearchHistory';
+import { useSearchHistory } from '../hooks/useSearchHistory';
+import { useApiData } from '../hooks/useApiData';
+import { useHistoryHandler } from '../hooks/useHistoryHandler';
 import ReactApexChart from 'react-apexcharts';
 import {
   Box,
@@ -42,8 +47,38 @@ const AlertPage = () => {
     mediumAlerts: 0,
     lowAlerts: 0
   });
+  const {
+          totalCounts,
+          setTotalCounts,
+          userData,
+          isLoading,
+          setIsLoading,
+          fetchCategories: fetchCategoriesApi,
+          fetchSemanticRCA,
+          fetchUserData,
+          fetchSpatialData,
+          stateData,
+          setStateData,
+      } = useApiData();
 
-  // Add this sorting function after the getAlertLevel function
+  const { searchHistory, saveToHistory, clearHistory, deleteHistoryItem } = useSearchHistory();
+  const { handleHistoryClick } = useHistoryHandler({
+        // filters,
+        // updateFilters,
+        fetchSemanticRCA,
+        fetchSpatialData,
+        fetchUserData,
+        // fetchCategories,
+        setTotalCounts,
+        setIsLoading
+  });
+
+
+
+  const rows = useMemo(() => (
+    alertData.map((row, index) => ({ id: index, ...row }))
+  ), [alertData]);
+
   const sortAlertData = (data) => {
     return [...data].sort((a, b) => {
       const alertLevelA = getAlertLevel(a.increase_percentage);
@@ -140,14 +175,10 @@ const AlertPage = () => {
     });
   };
 
-  useEffect(() => {
-    fetchCategoryAlerts();
-  }, []);
-
   const getAlertLevel = (percentage) => {
-    if (percentage > 20) return 'high';
-    if (percentage > 10) return 'medium';
-    return 'low';
+      if (percentage > 20) return 'high';
+      if (percentage > 10) return 'medium';
+      return 'low';
   };
 
   const getAlertColor = (level) => {
@@ -158,13 +189,78 @@ const AlertPage = () => {
     }
   };
 
-  const getAlertIcon = (level) => {
-    switch (level) {
-      case 'high': return <WarningIcon />;
-      case 'medium': return <InfoIcon />;
-      default: return <CheckCircleIcon />;
-    }
-  };
+  const columns = useMemo(() => [
+    {
+      field: 'category',
+      headerName: 'Category',
+      flex: 1,
+      sortable: true,
+    },
+    {
+      field: 'previous_count_per_day',
+      headerName: 'Last 12 Weeks Grievance Counts/Day',
+      flex: 1,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => params.value?.toFixed(2)
+    },
+    {
+      field: 'current_count_per_day',
+      headerName: 'Last 1 Week Grievance Counts/Day',
+      flex: 1,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => params.value?.toFixed(2)
+    },
+    {
+      field: 'increase_percentage',
+      headerName: 'Increase %',
+      flex: 1,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => {
+        const alertLevel = getAlertLevel(params.value);
+        const color = getAlertColor(alertLevel);
+        return (
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 1,
+            color: `${color}.main`
+          }}>
+            <TrendingUpIcon fontSize="small" />
+            {params.value?.toFixed(1)}%
+          </Box>
+        );
+      },
+    },
+    {
+      field: 'alert_level',
+      headerName: 'Alert Level',
+      flex: 1,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => {
+        const alertLevel = getAlertLevel(params.row.increase_percentage);
+        const color = getAlertColor(alertLevel);
+        return (
+          <Chip
+            label={alertLevel.toUpperCase()}
+            color={color}
+            variant={alertLevel === 'high' ? 'filled' : 'outlined'}
+            size="small"
+          />
+        );
+      },
+    },
+  ], [getAlertLevel, getAlertColor]);
+
+  useEffect(() => {
+    fetchCategoryAlerts();
+  }, []);
+
+
 
   const getBarChartOptions = () => {
     return {
@@ -250,31 +346,19 @@ const AlertPage = () => {
 
   return (
     <Fade in timeout={500}>
-      <Box sx={{ p: 3 }}>
-        {/* <Box sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 3
-        }}>
-          <Typography variant="h4" component="h1">
-            Category Alert Dashboard
-          </Typography>
-          <Button
-            startIcon={<RefreshIcon />}
-            onClick={() => fetchCategoryAlerts(true)}
-            disabled={loading}
-            variant="outlined"
-          >
-            Refresh
-          </Button>
-        </Box> */}
-
+      <Box sx={{ p: 2 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>
         )}
+
+        <SearchHistory
+                    searchHistory={searchHistory}
+                    onHistoryClick={handleHistoryClick}
+                    onClearHistory={clearHistory}
+                    onDeleteHistoryItem={deleteHistoryItem}
+        />
 
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
@@ -382,13 +466,7 @@ const AlertPage = () => {
           </Grid>
         </Grid>
 
-        <TableContainer
-          component={Paper}
-          sx={{
-            position: 'relative',
-            minHeight: '200px'
-          }}
-        >
+         <Box sx={{ height: 400, width: '100%', position: 'relative' }}>
           {loading && (
             <Box sx={{
               position: 'absolute',
@@ -400,71 +478,34 @@ const AlertPage = () => {
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              zIndex: 1
+              zIndex: 1,
             }}>
               <CircularProgress />
             </Box>
           )}
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Category</TableCell>
-                <TableCell align="right">Last 12 Weeks Grievance Counts/Day</TableCell>
-                <TableCell align="right">Last 1 Week Grievance Counts/Day</TableCell>
-                <TableCell align="right">Increase %</TableCell>
-                <TableCell align="center">Alert Level</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {alertData.map((row) => {
-                const alertLevel = getAlertLevel(row.increase_percentage);
-                return (
-                  <TableRow
-                    key={row.category}
-                    sx={{
-                      '&:hover': { backgroundColor: '#f5f5f5' },
-                      // backgroundColor: alertLevel === 'high' ? '#fff8e1' : 'inherit'
-                    }}
-                  >
-                    <TableCell component="th" scope="row">
-                      {row.category}
-                    </TableCell>
-                    <TableCell align="center">
-                      {row.previous_count_per_day.toFixed(2)}
-                    </TableCell>
-                    <TableCell align="center">
-                      {row.current_count_per_day.toFixed(2)}
-                    </TableCell>
-                    <TableCell
-                      align="center"
-                      sx={{
-                        color: `${getAlertColor(alertLevel)}.main`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'flex-end',
-                        gap: 1
-                      }}
-                    >
-                      <TrendingUpIcon />
-                      {row.increase_percentage.toFixed(1)}%
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        // icon={getAlertIcon(alertLevel)}
-                        label={alertLevel.toUpperCase()}
-                        color={getAlertColor(alertLevel)}
-                        variant={alertLevel === 'high' ? 'filled' : 'outlined'}
-                        size="small"
-                      />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
 
-        <Paper sx={{ p: 3, mb: 3, position: 'relative' }}>
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            disableColumnFilter
+            disableColumnSelector
+            disableDensitySelector
+            showToolbar
+            autoHeight
+            sx={{
+              '& .MuiDataGrid-cell:hover': {
+                backgroundColor: '#f5f5f5',
+              },
+            }}
+            getRowClassName={(params) => {
+              const alertLevel = getAlertLevel(params.row.increase_percentage);
+              return alertLevel === 'high' ? 'row-high-alert' : '';
+            }}
+          />
+        </Box>
+
+
+        {/* <Paper sx={{ p: 3, mb: 3, position: 'relative' }}>
           <Typography variant="h6" gutterBottom>
             Per Hour Complaints Comparison
           </Typography>
@@ -490,7 +531,7 @@ const AlertPage = () => {
             type="bar"
             height={400}
           />
-        </Paper>
+        </Paper> */}
       </Box>
     </Fade>
   );

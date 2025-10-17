@@ -82,20 +82,6 @@ const AlertTable = (props) => {
     }
   };
 
-//   const handleSeeMore = (title, searchHistory, navigate) => {
-//   if (title === 'High Alerts') {
-//     navigate('/category-alert');
-//   } else if (title === 'Categories') {
-//     navigate('/category-explorer');
-//   } else if (title === 'States') {
-//     const lastQuery = searchHistory?.length
-//       ? searchHistory[searchHistory.length - 1]
-//       : '';
-//     navigate('/semantic-search', { state: { lastQuery } });
-//   } else {
-//     console.warn('Unhandled table title:', title);
-//   }
-// };
 
   // Sorting
   const handleSort = (property) => {
@@ -255,19 +241,12 @@ const AlertTable = (props) => {
               } else if (props.title === 'Categories') {
                 navigate('/category-explorer');
               } else if (props.title === 'States') {
-                if (searchHistory?.length > 0) {
-                  const lastQuery = searchHistory[searchHistory.length - 1];
-                  const queryString = lastQuery?.params?.query || '';
-                  
-                  localStorage.setItem('lastQuery', JSON.stringify(lastQuery));
-                  navigate("/semantic-search", { 
-                    state: { lastQuery: queryString } 
-                  });
-                } else {
-                  console.warn('No search history available');
-                  navigate("/semantic-search", { state: { lastQuery: '' } });
-                }
-              } else {
+                navigate("/semantic-search")
+              }
+              else if(props.title==='Companies'){
+                    navigate("/companies")
+              }
+               else {
                 console.warn('Unhandled table title:', props.title);
               }
             }}

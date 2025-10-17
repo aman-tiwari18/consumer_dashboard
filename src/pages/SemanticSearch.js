@@ -30,7 +30,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Search as SearchIcon, Refresh as RefreshIcon } from '@mui/icons-material';
-// import {useSearchHistory } from '../hooks/useSearchHistory';
+import {useSearchHistory } from '../hooks/useSearchHistory';
 import 'leaflet/dist/leaflet.css';
 import IndiaMap from '../components/IndiaMap';
 import { useSearchParams , useLocation ,useNavigate, useLoaderData } from 'react-router-dom';
@@ -58,6 +58,7 @@ const SemanticSearch = () => {
     const [heatmapData, setHeatmapData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const {searchHistory} = useSearchHistory();
 
     const location = useLocation();
 
@@ -164,32 +165,26 @@ const SemanticSearch = () => {
         }
     };
 
+    useEffect(() => {
+    if (searchHistory?.length > 0) {
+        const lastQuery = searchHistory[searchHistory.length - 1];
+        const queryString = lastQuery?.params?.query || '';
+
+        if (queryString && queryString !== filters.query) {
+        setFilters((prev) => ({
+            ...prev,
+            query: queryString,
+        }));
+        }
+    }
+    }, [searchHistory]);
 
     useEffect(() => {
-        const queryFromNav = location.state?.lastQuery;
-        console.log("queryState", queryFromNav)
-        let initialQuery = ''; 
+    if (filters.query) {
+        fetchData();
+    }
+    }, [filters.query]);
 
-        if (queryFromNav !== undefined) {
-            initialQuery = queryFromNav;
-        } else {
-            try {
-                const storedData = localStorage.getItem('lastQuery');
-                initialQuery = JSON.parse(storedData)?.params?.query || '';
-            } catch (error) {
-                console.error('Error reading from localStorage:', error);
-            }
-        }
-        
-        const initialFilters = { 
-            ...filters, 
-            query: initialQuery 
-        };
-
-        setFilters(initialFilters);
-        fetchData2(initialFilters);
-
-    }, []);
 
 
     return (

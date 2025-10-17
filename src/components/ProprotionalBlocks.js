@@ -34,18 +34,22 @@ const ProportionalBlocks = ({
 
     const getColorForValue = (value, maxValue, minValue) => {
         const normalized = (value - minValue) / (maxValue - minValue || 1);
-        if (normalized > 0.66) {
-            const intensity = 0.6 + (normalized - 0.66) * 0.6;
-            return `rgb(${Math.round(255 * intensity)}, ${Math.round(120 * intensity)}, ${Math.round(120 * intensity)})`; 
-        
-        } else if (normalized > 0.33) {
-            const intensity = 0.5 + (normalized - 0.33) * 0.8;
-            return `rgb(${Math.round(130 * intensity)}, ${Math.round(170 * intensity)}, ${Math.round(255 * intensity)})`;
-            
+
+        if (normalized > 0.8) {
+            const intensity = 0.8 + (normalized - 0.8) * 0.2;
+            return `rgb(${Math.round(220 * intensity)}, ${Math.round(80 * intensity)}, ${Math.round(80 * intensity)})`; 
+        } else if (normalized > 0.6) {
+            const intensity = 0.7 + (normalized - 0.6) * 0.5;
+            return `rgb(${Math.round(160 * intensity)}, ${Math.round(120 * intensity)}, ${Math.round(220 * intensity)})`;
+        } else if (normalized > 0.4) {
+            const intensity = 0.6 + (normalized - 0.4) * 0.7;
+            return `rgb(${Math.round(100 * intensity)}, ${Math.round(160 * intensity)}, ${Math.round(255 * intensity)})`;
+        } else if (normalized > 0.2) {
+            const intensity = 0.5 + (normalized - 0.2) * 0.8;
+            return `rgb(${Math.round(80 * intensity)}, ${Math.round(200 * intensity)}, ${Math.round(180 * intensity)})`;
         } else {
             const intensity = 0.4 + normalized * 0.6;
-            return `rgb(${Math.round(255 * intensity)}, ${Math.round(235 * intensity)}, ${Math.round(180 * intensity)})`;
-            
+            return `rgb(${Math.round(180 * intensity)}, ${Math.round(220 * intensity)}, ${Math.round(240 * intensity)})`;
         }
     };
 

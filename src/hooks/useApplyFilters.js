@@ -29,7 +29,7 @@ export const useApplyFilters = ({
             }
 
             updateFilters({ complaintNumbers });
-            await fetchSpatialData({ ...filters, query });
+            // await fetchSpatialData({ ...filters, query });
             await fetchCategories(query);
 
             const searchParams = {

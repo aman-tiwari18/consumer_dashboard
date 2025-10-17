@@ -29,7 +29,82 @@ const AlertComponent = (props) => {
     lowAlerts: 0
   });
 
+  const [companyData, setCompanyData] = useState([]);
+
   console.log('props categoriesCount:', props.data);
+
+  const fetchCompanyDetails = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.post(
+        "https://cdis.iitk.ac.in/consumer_api/get_company_details?sectorname=All&companyname=All&categoryname=All",
+        {},
+        { headers: { Accept: "application/json" } }
+      );
+
+      const companies = res.data || [];
+
+      const results = await Promise.all(
+      companies.slice(0, 10).map(async (company) => {   // 👈 limit to first 10
+      const payload = {
+      query: company.companyname,
+      skip: 0,
+      size: 0,
+      start_date: "2025-01-01",
+      end_date: "2025-03-30",
+      value: 2,
+      CityName: "All",
+      stateName: "All",
+      complaintType: "All",
+      complaintMode: "All",
+      companyName: "All",
+      complaintStatus: "All",
+      threshold: 1.5,
+      complaint_numbers: ["NA"],
+    };
+
+    try {
+      const response = await axios.post(
+        "https://cdis.iitk.ac.in/consumer_api/search",
+        payload,
+        {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return {
+        companyName: company.companyname,
+        sectorName: company.sectorname,
+        catName: company.catname,
+        counts: response.data?.total_count || 0,
+      };
+    } catch (err) {
+      console.error(`Error fetching count for ${company.companyname}:`, err);
+      return {
+        companyName: company.companyname,
+        sectorName: company.sectorname,
+        catName: company.catname,
+        counts: 0,
+      };
+    }
+  })
+);
+
+
+      setCompanyData(results);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching company details:", error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanyDetails();
+  }, []);
 
 
   const [order, setOrder] = useState('asc');
@@ -265,7 +340,7 @@ const AlertComponent = (props) => {
           </Grid>
 
           <Grid size={6}>
-          <AlertTable title= "Companies" data = {companiesData}/>
+          <AlertTable title= "Companies" data = {companyData}/>
           </Grid>
 
           <Grid size={6}>

@@ -1,0 +1,249 @@
+{
+  "ConsumerGrievancePrompts": [
+    {
+      "category": "Airlines - Domestic Flights",
+      "categoryPrompt": "Issue with domestic airline flights In india , issue while booking domestic flights,  flight cancellation, In-flight services, baggage services IN flight",
+      "subcategoryPrompts": {
+        "Flight Cancellation": "Domestic flight cancellation by Indian airline with refund denial or inadequate rebooking for travel within India",
+        "Flight Delay": "Domestic flight operated by Indian airline delayed beyond scheduled departure time",
+        "Overbooking": "Denied boarding on domestic flight due to airline overbooking policies",
+        "Baggage Loss or Damage": "Baggage lost, delayed, or damaged on domestic flight routes",
+        "Seat and Booking Issues": "Incorrect seat allocation or booking problems on domestic flights",
+        "Poor Service Quality": "In-flight service quality issues on domestic airline flights",
+        "Safety Concerns": "Safety protocol violations during domestic flight operations",
+        "Refund and Ticket Issues": "Refund denial or ticket-related problems for domestic flights"
+      }
+    },
+    {
+      "category": "Airlines - International Flights",
+      "categoryPrompt": "Complaints specific to international airline flights crossing country borders regarding booking, cancellation, delays, visa issues, currency conversion, and international passenger services",
+      "subcategoryPrompts": {
+        "Flight Cancellation": "International flight cancellation affecting cross-border travel with compensation issues",
+        "Flight Delay": "Extended delay on international flight routes affecting connecting flights",
+        "Visa and Documentation Issues": "Wrongful denial of boarding on international flight due to visa or documentation problems",
+        "Overbooking": "Denied boarding on international flight due to overselling",
+        "Baggage Mishandling": "Baggage lost or misrouted on international flight routes",
+        "Medical Emergency or Assistance": "Inadequate medical assistance during international flight operations",
+        "Currency Conversion and Hidden Charges": "Unfair currency conversion rates in international flight bookings",
+        "Travel Insurance and Claim Denial": "International travel insurance claim rejection for trip disruptions"
+      }
+    },
+    {
+      "category": "Electricity - Domestic Connection",
+      "categoryPrompt": "Complaints specific to residential electricity supply, meter readings, bills, power quality, and connection management for domestic household consumers",
+      "subcategoryPrompts": {
+        "High or Abnormal Bills": "Unexplained spike in residential electricity bill without corresponding household usage increase",
+        "Meter Reading Discrepancy": "Discrepancy between actual residential consumption and meter reading recorded by electricity board",
+        "Billing Errors": "Incorrect calculation, duplicate charges, or wrong tariff in domestic electricity bill",
+        "Connection Disconnection Issues": "Wrongful or improper disconnection of domestic electricity connection",
+        "Power Outages or Frequent Power Cuts": "Recurring power outages affecting residential electricity supply",
+        "Faulty Meter": "Suspected malfunctioning electricity meter at residential address",
+        "Safety Hazards": "Electrical hazards in domestic connection such as exposed wires or voltage fluctuations",
+        "Deposit and Refund Issues": "Delayed or rejected security deposit refund for domestic electricity connection"
+      }
+    },
+    {
+      "category": "Electricity - Commercial Connection",
+      "categoryPrompt": "Complaints specific to commercial and industrial electricity supply, tariff classification, peak-hour charges, power quality, and business electricity billing",
+      "subcategoryPrompts": {
+        "Excessive Billing for Commercial Unit": "Disproportionately high billing on commercial electricity connection for business operations",
+        "Tariff Misclassification": "Incorrect commercial tariff category applied to business electricity connection",
+        "Peak and Off-Peak Rate Issues": "Inaccurate calculation of peak and off-peak rates in commercial electricity billing",
+        "Power Factor Charges": "Unjustified power factor penalties on commercial electricity connection",
+        "Outages Affecting Business": "Unplanned power interruptions on commercial connection causing business losses",
+        "Three-Phase Connection Issues": "Phase-related problems in commercial three-phase electricity connection",
+        "Fixed Charges Dispute": "Disputed fixed charges in commercial electricity bill"
+      }
+    },
+    {
+      "category": "Banking - Savings and Current Accounts",
+      "categoryPrompt": "Complaints specific to bank savings and current account services including deposits, withdrawals, unauthorized transactions, ATM access, and account management",
+      "subcategoryPrompts": {
+        "Unauthorized Transactions": "Fraudulent debit entries or unauthorized money transfers from bank account",
+        "Missing Deposits": "Bank deposits transferred but not credited to bank account",
+        "Account Freezing Without Notice": "Bank account frozen without prior notification or explanation",
+        "Incorrect Account Closure": "Bank account closed without customer authorization",
+        "Charges and Fees": "Unexpected or undisclosed charges levied by bank on account",
+        "ATM Card Issues": "ATM card cloning, unauthorized transactions, or card blocking issues",
+        "Failed Transactions with Debit": "Money debited from bank account but transaction failed without reversal",
+        "Recurring Payment Failures": "Repeated failures of recurring payment instructions from bank account"
+      }
+    },
+    {
+      "category": "Banking - Loans",
+      "categoryPrompt": "Complaints specific to bank loan products including personal loans, auto loans, business loans, EMI calculation, interest rates, and loan disbursement",
+      "subcategoryPrompts": {
+        "Hidden Charges and Levies": "Undisclosed charges or hidden levies in bank loan agreement",
+        "Excessive Interest Charges": "Bank charging interest rate higher than agreed loan terms",
+        "Processing Delays": "Undue delays in bank loan approval or disbursement process",
+        "Loan Rejection": "Bank loan application rejected with insufficient explanation",
+        "Incorrect EMI Calculation": "Bank calculating monthly EMI incorrectly for loan",
+        "Prepayment Penalty Issues": "Bank imposing excessive prepayment charges on loan closure",
+        "Foreclosure Complications": "Delays in bank loan foreclosure or final settlement",
+        "Collateral and Security Issues": "Improper handling of collateral pledged for bank loan"
+      }
+    },
+    {
+      "category": "Banking - Credit Cards",
+      "categoryPrompt": "Complaints specific to bank credit card transactions, billing, unauthorized charges, reward points, interest rates, and credit card account management",
+      "subcategoryPrompts": {
+        "Unauthorized Credit Card Charges": "Fraudulent transactions on credit card not made by cardholder",
+        "Billing Cycle Issues": "Errors in credit card billing, incorrect transaction posting, or payment processing",
+        "Interest Rate Discrepancy": "Bank credit card charging higher interest rate than agreed",
+        "Rewards Points Not Credited": "Reward points not credited to credit card account",
+        "Card Replacement Delays": "Unnecessary delays in credit card replacement delivery",
+        "Incorrect Credit Limit Changes": "Bank unilaterally reducing credit card limit without notification",
+        "Disputed Installment Plans": "Unauthorized installment plan activation on credit card",
+        "Annual Fee Disputes": "Unexpected annual fee charged on credit card without benefits"
+      }
+    },
+    {
+      "category": "Telecom - Voice GSM Services",
+      "categoryPrompt": "Complaints specific to mobile phone voice services, call quality, billing, roaming charges, network connectivity, and mobile connection management",
+      "subcategoryPrompts": {
+        "Unauthorized Usage Charges": "Mobile operator billing for calls and services not used",
+        "Connection Interruptions": "Frequent call drops on mobile phone or connection failures",
+        "Billing for Closed Services": "Mobile operator continuing charges after mobile service cancellation",
+        "Poor Network Quality": "Low mobile signal strength or poor call quality on mobile network",
+        "Roaming Charges": "Excessive or undisclosed roaming charges when using international networks",
+        "Plan Downgrade Issues": "Mobile plan not properly downgraded or old charges persisting after plan change",
+        "Number Porting Failures": "Issues during mobile number porting between telecom operators",
+        "Incoming Call Failures": "Unable to receive incoming mobile calls or messages"
+      }
+    },
+    {
+      "category": "Telecom - Data and Broadband",
+      "categoryPrompt": "Complaints specific to broadband internet services, internet speeds, data connectivity, billing, installation, and broadband service reliability",
+      "subcategoryPrompts": {
+        "Slow Internet Speed": "Broadband internet speed significantly lower than promised plan specifications",
+        "Frequent Disconnections": "Repeated broadband disconnections or internet connection drops",
+        "Data Throttling": "Broadband speed reduced after consuming data limit despite unlimited claims",
+        "Billing for Unused Services": "Broadband operator charging for unused data or services",
+        "Connection Not Installed": "Delay in broadband connection installation beyond promised date",
+        "High Latency and Gaming Issues": "Excessive ping times on broadband connection affecting online gaming",
+        "Service Unavailability": "Broadband service completely unavailable or outage for extended period",
+        "Router and Equipment Issues": "Faulty broadband router or modem provided by internet operator"
+      }
+    },
+    {
+      "category": "E-commerce - Online Shopping",
+      "categoryPrompt": "Complaints specific to online product purchases, delivery of e-commerce orders, product quality, authenticity, returns, and online retail transactions",
+      "subcategoryPrompts": {
+        "Non-Delivery of Order": "E-commerce order paid but product not delivered within promised timeframe",
+        "Late Delivery": "E-commerce product delivered significantly later than promised delivery date",
+        "Wrong Item Delivered": "Different product delivered from e-commerce order than purchased",
+        "Damaged Products on Arrival": "E-commerce product received in damaged condition upon delivery",
+        "Counterfeit or Substandard Quality": "Counterfeit or low-quality product delivered from e-commerce platform",
+        "Price and Hidden Charges": "E-commerce final billing higher than displayed product price",
+        "Return and Refund Rejection": "E-commerce return request rejected or refund not processed",
+        "Missing Items in Package": "E-commerce package delivered with missing items from order"
+      }
+    },
+    {
+      "category": "E-commerce - Digital Transactions and Payment",
+      "categoryPrompt": "Complaints specific to online payment processing, digital transactions, payment failures, refunds, digital wallets, and payment security in e-commerce",
+      "subcategoryPrompts": {
+        "Payment Deducted but Order Not Confirmed": "Payment charged for e-commerce order but order not placed or confirmed",
+        "Duplicate Charges": "E-commerce transaction charged multiple times for single order",
+        "Failed Payment Showing as Success": "E-commerce payment failed but amount debited from account",
+        "Unauthorized Transactions": "Unauthorized transactions on e-commerce payment method",
+        "Refund Delayed or Not Processed": "E-commerce refund not processed within specified timeframe",
+        "Currency Conversion Issues": "Unfair currency conversion rates in e-commerce international transactions",
+        "Digital Wallet Issues": "Problems with digital wallet balance or fund transfers in e-commerce platform",
+        "Payment Gateway Errors": "Technical payment gateway errors during e-commerce transaction"
+      }
+    },
+    {
+      "category": "Insurance - Health Insurance",
+      "categoryPrompt": "Complaints specific to health insurance policies, medical claims, hospital bills coverage, claim settlement, pre-authorization, and health insurance policy disputes",
+      "subcategoryPrompts": {
+        "Claim Rejection": "Health insurance medical claim rejected without valid reason",
+        "Claim Settlement Delay": "Health insurance approved claim not settled within promised timeframe",
+        "Partial Claim Payment": "Health insurance claim amount reduced or partially settled without justification",
+        "Hospital Bill Disputes": "Health insurance refusing to cover specific hospital treatment bills",
+        "Pre-Authorization Denial": "Health insurance pre-authorization for medical treatment denied",
+        "Policy Exclusions and Limitations": "Health insurance claim denied based on policy exclusions",
+        "Network Hospital Issues": "Health insurance denying coverage at network hospital",
+        "Renewal and Premium Issues": "Health insurance premium increased unreasonably during policy renewal"
+      }
+    },
+    {
+      "category": "Insurance - Motor Insurance",
+      "categoryPrompt": "Complaints specific to motor vehicle insurance, accident claims, vehicle damage assessment, claim settlement, premium disputes, and motor policy services",
+      "subcategoryPrompts": {
+        "Claim Rejection After Accident": "Motor insurance claim rejected after vehicle accident",
+        "Unfair Damage Assessment": "Motor insurance damage assessment amount lower than actual repair costs",
+        "Delay in Claim Settlement": "Motor insurance claim not settled within reasonable timeframe",
+        "Third-Party Liability Issues": "Motor insurance third-party liability claims not honored",
+        "Premium Increase After Claim": "Motor insurance premium increased after legitimate claim filing",
+        "Policy Cancellation Without Notice": "Motor insurance policy cancelled without adequate notice",
+        "Network Garage Disputes": "Motor insurance disputes over repair quality at network garages"
+      }
+    },
+    {
+      "category": "Insurance - Travel Insurance",
+      "categoryPrompt": "Complaints specific to travel insurance policies, trip cancellation coverage, international medical coverage, baggage insurance, and travel-related claim disputes",
+      "subcategoryPrompts": {
+        "Trip Cancellation Claim Rejection": "Travel insurance claim rejected for trip cancellation",
+        "Medical Claim While Traveling": "Travel insurance medical claim denied or insufficiently covered abroad",
+        "Lost Luggage Claim Issues": "Travel insurance lost baggage claim not fully settled",
+        "Flight Delay Compensation": "Travel insurance flight delay compensation claim denied",
+        "Document Loss or Theft": "Travel insurance not covering lost or stolen travel documents",
+        "Emergency Evacuation": "Travel insurance evacuation claim rejected or inadequately compensated",
+        "Repatriation Claim": "Travel insurance repatriation costs not covered during medical emergency"
+      }
+    },
+    {
+      "category": "Retail - Departmental Stores",
+      "categoryPrompt": "Complaints specific to retail store purchases, product quality, billing accuracy, defective items, exchange and return policies, and retail store transactions",
+      "subcategoryPrompts": {
+        "Defective Product Purchased": "Defective product purchased from retail departmental store",
+        "Price Mismatch at Billing": "Retail store billing product at higher price than displayed",
+        "Wrong Size or Variant Delivered": "Retail store delivering incorrect size or variant than purchased",
+        "Missing Items in Package": "Retail store package incomplete with missing items",
+        "Expired Products Sold": "Retail store selling expired products without disclosure",
+        "Exchange and Return Denial": "Retail store rejecting return or exchange without valid reason"
+      }
+    },
+    {
+      "category": "Courier and Cargo Services",
+      "categoryPrompt": "Complaints specific to courier delivery services, shipment tracking, cargo handling, loss, damage, and courier service quality",
+      "subcategoryPrompts": {
+        "Delayed Delivery": "Courier service not delivering shipment within promised delivery timeline",
+        "Lost Consignment": "Courier service failing to locate or deliver shipped package",
+        "Damaged Package": "Courier service delivering package in damaged condition",
+        "Wrong Recipient Delivery": "Courier service delivering shipment to wrong address or recipient",
+        "Incomplete Delivery": "Courier service delivering incomplete shipment with missing items",
+        "Exorbitant Charges": "Courier service charging final amount significantly higher than quoted",
+        "Insurance Claim Rejection": "Courier service rejecting shipment insurance claim"
+      }
+    },
+    {
+      "category": "Automobile - Four Wheelers",
+      "categoryPrompt": "Complaints specific to four-wheeler vehicles, manufacturing defects, mechanical issues, service quality, warranty disputes, and four-wheeler maintenance",
+      "subcategoryPrompts": {
+        "Vehicle Defect": "Manufacturing defect in four-wheeler components or systems",
+        "Poor Service Quality": "Inadequate service quality at four-wheeler service center",
+        "Warranty Claim Denial": "Four-wheeler warranty claim rejected by vehicle manufacturer or dealer",
+        "Spare Parts Quality": "Substandard or counterfeit spare parts used in four-wheeler repair",
+        "Incorrect Billing for Service": "Four-wheeler service center charging higher than quoted amount",
+        "Delivery Delay": "Four-wheeler delivery delayed beyond promised delivery date",
+        "Paint and Body Issues": "Paint quality or body defects in four-wheeler after delivery",
+        "Electrical and Mechanical Issues": "Recurring electrical or mechanical problems in four-wheeler"
+      }
+    },
+    {
+      "category": "Automobile - Two Wheelers",
+      "categoryPrompt": "Complaints specific to two-wheeler bikes and scooters, engine problems, mechanical defects, warranty rejections, service quality, and two-wheeler maintenance",
+      "subcategoryPrompts": {
+        "Engine and Mechanical Failure": "Two-wheeler engine failure or mechanical problems affecting bike/scooter operation",
+        "Faulty Parts": "Defective components in two-wheeler such as clutch, transmission, or suspension",
+        "Inconsistent Performance": "Two-wheeler showing poor fuel efficiency, weak pickup, or performance issues",
+        "Warranty Claim Denial": "Two-wheeler warranty claim for manufacturing defects rejected by dealer",
+        "Service Center Negligence": "Two-wheeler damaged during servicing at authorized bike/scooter service centers",
+        "Spare Parts Overcharging": "Two-wheeler spare parts charges inflated or counterfeit parts sold as genuine",
+        "Battery and Electrical Issues": "Two-wheeler battery malfunction or electrical system problems in bike/scooter"
+      }
+    }
+  ]
+}
