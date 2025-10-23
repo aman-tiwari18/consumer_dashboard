@@ -10,6 +10,7 @@ export const useApplyFilters = ({
     fetchSpatialData,
     fetchUserData,
     fetchCategories,
+    // fetchCategoryWithCount,
     saveToHistory,
     totalCounts,
     stateData,
@@ -31,6 +32,7 @@ export const useApplyFilters = ({
             updateFilters({ complaintNumbers });
             // await fetchSpatialData({ ...filters, query });
             await fetchCategories(query);
+            // await fetchCategoryWithCount(query);
 
             const searchParams = {
                 ...createSearchParams({ ...filters, query }),
@@ -48,6 +50,7 @@ export const useApplyFilters = ({
         fetchSpatialData,
         fetchUserData,
         fetchCategories,
+        // fetchCategoryWithCount,
         saveToHistory,
         totalCounts,
         stateData,

@@ -1,37 +1,45 @@
 // pages/CategoryAlert.js
 import React, { useState, useEffect , useMemo} from 'react';
 import axios from 'axios';
-import { DataGrid } from '@mui/x-data-grid';
 import SearchHistory from '../components/SearchHistory';
 import { useSearchHistory } from '../hooks/useSearchHistory';
 import { useApiData } from '../hooks/useApiData';
 import { useHistoryHandler } from '../hooks/useHistoryHandler';
-import ReactApexChart from 'react-apexcharts';
+import {
+  Search as SearchIcon,
+  Refresh as RefreshIcon,
+  FileDownload as FileDownloadIcon,
+  ClearAll as ClearAllIcon
+} from '@mui/icons-material';
 import {
   Box,
-  Paper,
+  CircularProgress,
+  Alert,
+  Chip,
+  Fade,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Paper,
+  TextField,
   Typography,
-  CircularProgress,
-  Alert,
+  Grid,
   Card,
   CardContent,
-  Grid,
-  Chip,
+  InputAdornment,
   Button,
-  Fade
+  Toolbar as MuiToolbar,
+  Stack,
+  TableSortLabel
 } from '@mui/material';
 import {
   TrendingUp as TrendingUpIcon,
   Warning as WarningIcon,
   Info as InfoIcon,
-  CheckCircle as CheckCircleIcon,
-  Refresh as RefreshIcon
+  CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
@@ -41,6 +49,10 @@ const AlertPage = () => {
   const [alertData, setAlertData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterField, setFilterField] = useState('category')
+  const [orderBy, setOrderBy] = useState('category');
+  const [order, setOrder] = useState('desc');
   const [stats, setStats] = useState({
     totalCategories: 0,
     highAlerts: 0,
@@ -61,6 +73,9 @@ const AlertPage = () => {
           setStateData,
       } = useApiData();
 
+  const handleClearSearch = () => {
+    setSearchTerm('');
+  };
   const { searchHistory, saveToHistory, clearHistory, deleteHistoryItem } = useSearchHistory();
   const { handleHistoryClick } = useHistoryHandler({
         // filters,
@@ -73,7 +88,18 @@ const AlertPage = () => {
         setIsLoading
   });
 
+    const filteredData = useMemo(() => {
+      if (!searchTerm) return alertData;
+      return alertData.filter(row =>
+        row[filterField]?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }, [alertData, searchTerm, filterField]);
 
+  const handleSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
 
   const rows = useMemo(() => (
     alertData.map((row, index) => ({ id: index, ...row }))
@@ -112,6 +138,53 @@ const AlertPage = () => {
     return (now - cachedData.timestamp) < CACHE_EXPIRATION;
   };
 
+
+
+    const sortedData = useMemo(() => {
+      const sorted = [...filteredData].sort((a, b) => {
+        let aValue = a[orderBy];
+        let bValue = b[orderBy];
+  
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return order === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+  
+        // Handle string values
+        aValue = String(aValue).toLowerCase();
+        bValue = String(bValue).toLowerCase();
+  
+        if (order === 'asc') {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      });
+      return sorted;
+    }, [filteredData, orderBy, order]);
+
+  const handleRefresh = () => {
+    fetchCategoryAlerts();
+  };
+
+  const handleExport = () => {
+    const csv = [
+      ['Company Name', 'Sector', 'Category Name', 'Complaints Count'],
+      ...sortedData.map(row => [
+        row.category,
+        row.previous_count_per_day,
+        row.current_count_per_day,
+        row.counts
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'companies.csv';
+    a.click();
+  };
+
   const fetchCategoryAlerts = async (forceRefresh = false) => {
     if (!forceRefresh && isCacheValid() && cachedData.data) {
       const sortedData = sortAlertData(cachedData.data);
@@ -130,13 +203,13 @@ const AlertPage = () => {
         'https://cdis.iitk.ac.in/consumer_api/get_category_alert',
         {
           last_days: 84,
-          given_date: "2025-07-01",
+          given_date: "2025-09-01",
           value: 1,
           CityName: "All",
           stateName: "All",
-          complaintType: "Consumer good & Retail",
+          complaintType: "All",
           complaintMode: "All",
-          companyName: "All",
+          category: "All",
           complaintStatus: "All",
           threshold: 1.3,
           complaint_numbers: ["NA"]
@@ -262,87 +335,6 @@ const AlertPage = () => {
 
 
 
-  const getBarChartOptions = () => {
-    return {
-      chart: {
-        type: 'bar',
-        height: 400,
-        stacked: false,
-        toolbar: {
-          show: true
-        },
-        zoom: {
-          enabled: true
-        }
-      },
-      responsive: [{
-        breakpoint: 480,
-        options: {
-          legend: {
-            position: 'bottom',
-            offsetX: -10,
-            offsetY: 0
-          }
-        }
-      }],
-      colors: ['#ffd858', '#fa6b84'],
-      plotOptions: {
-        bar: {
-          horizontal: false,
-          columnWidth: '55%',
-          borderRadius: 3,
-        },
-      },
-      dataLabels: {
-        enabled: false
-      },
-      stroke: {
-        show: true,
-        width: 2,
-        colors: ['transparent']
-      },
-      xaxis: {
-        categories: alertData.map(item => item.category),
-        labels: {
-          rotate: -45,
-          trim: true,
-          maxHeight: 120
-        }
-      },
-      yaxis: {
-        // title: {
-        //   text: 'Complaints per Hour'
-        // }
-      },
-      fill: {
-        opacity: 1
-      },
-      legend: {
-        position: 'top',
-        horizontalAlign: 'right',
-      },
-      tooltip: {
-        y: {
-          formatter: function (val) {
-            return val + " complaints/hour"
-          }
-        }
-      }
-    };
-  };
-
-  const getBarChartSeries = () => {
-    return [
-      {
-        name: 'Last 12 Weeks Average',
-        data: alertData.map(item => item.previous_count_per_day)
-      },
-      {
-        name: 'Last Week Average',
-        data: alertData.map(item => item.current_count_per_day)
-      }
-    ];
-  };
 
   return (
     <Fade in timeout={500}>
@@ -466,72 +458,195 @@ const AlertPage = () => {
           </Grid>
         </Grid>
 
-         <Box sx={{ height: 400, width: '100%', position: 'relative' }}>
-          {loading && (
-            <Box sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              zIndex: 1,
-            }}>
-              <CircularProgress />
-            </Box>
-          )}
 
-          <DataGrid
-            rows={rows}
-            columns={columns}
-            disableColumnFilter
-            disableColumnSelector
-            disableDensitySelector
-            showToolbar
-            autoHeight
-            sx={{
-              '& .MuiDataGrid-cell:hover': {
-                backgroundColor: '#f5f5f5',
-              },
-            }}
-            getRowClassName={(params) => {
-              const alertLevel = getAlertLevel(params.row.increase_percentage);
-              return alertLevel === 'high' ? 'row-high-alert' : '';
-            }}
-          />
-        </Box>
-
-
-        {/* <Paper sx={{ p: 3, mb: 3, position: 'relative' }}>
-          <Typography variant="h6" gutterBottom>
-            Per Hour Complaints Comparison
-          </Typography>
-          {loading && (
-            <Box sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              zIndex: 1
-            }}>
-              <CircularProgress />
-            </Box>
-          )}
-          <ReactApexChart
-            options={getBarChartOptions()}
-            series={getBarChartSeries()}
-            type="bar"
-            height={400}
-          />
-        </Paper> */}
+        <Box sx={{ p: 2 }}>
+                {error && (
+                  <Alert severity="error" sx={{ mb: 3 }}>
+                    {error}
+                  </Alert>
+                )}
+        
+                <SearchHistory
+                  searchHistory={searchHistory}
+                  onHistoryClick={handleHistoryClick}
+                  onClearHistory={clearHistory}
+                  onDeleteHistoryItem={deleteHistoryItem}
+                />
+        
+                {/* Custom Toolbar */}
+                <Paper sx={{ mb: 3 }}>
+                  <MuiToolbar sx={{ gap: 2, flexWrap: 'wrap', display: 'flex', alignItems: 'center' }}>
+                    {/* Search Section */}
+                    <TextField
+                      size="small"
+                      placeholder="Search Alerts..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchIcon sx={{ color: 'primary.main' }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={{ flex: 1, minWidth: '250px' }}
+                    />
+        
+                    {/* Action Buttons */}
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<ClearAllIcon />}
+                        onClick={handleClearSearch}
+                        disabled={!searchTerm}
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<RefreshIcon />}
+                        onClick={handleRefresh}
+                        disabled={loading}
+                      >
+                        Refresh
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<FileDownloadIcon />}
+                        onClick={handleExport}
+                      >
+                        Export
+                      </Button>
+                    </Stack>
+        
+                    {/* Results Count */}
+                    <Box sx={{ ml: 'auto', fontSize: '0.9rem', color: 'text.secondary' }}>
+                      Showing {sortedData.length} of {alertData.length} companies
+                    </Box>
+                  </MuiToolbar>
+                </Paper>
+        
+                {/* Table */}
+                <TableContainer component={Paper} sx={{ position: 'relative' }}>
+                  {loading && (
+                    <Box sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                      zIndex: 10,
+                    }}>
+                      <CircularProgress />
+                    </Box>
+                  )}
+        
+                  <Table>
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#f9f9f9' }}>
+                        <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'left' }}>
+                          <TableSortLabel
+                            // active={orderBy === 'category'}
+                            active = {true}
+                            direction={orderBy === 'category' ? order : 'asc'}
+                            onClick={() => handleSort('category')}
+                          >
+                            Alerts Name
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'center' }}>
+                          <TableSortLabel
+                            // active={orderBy === 'previous_count_per_day'}
+                            active = {true}
+                            direction={orderBy === 'previous_count_per_day' ? order : 'asc'}
+                            onClick={() => handleSort('previous_count_per_day')}
+                          >
+                           previous_count_per_day
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'center' }}>
+                          <TableSortLabel
+                            // active={orderBy === 'current_count_per_day'}
+                            active = {true}
+                            direction={orderBy === 'current_count_per_day' ? order : 'asc'}
+                            onClick={() => handleSort('current_count_per_day')}
+                          >
+                            current_count_per_day
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'center' }}>
+                          <TableSortLabel
+                            // active={orderBy === 'counts'}
+                            active = {true}
+                            direction={orderBy === 'counts' ? order : 'asc'}
+                            onClick={() => handleSort('counts')}
+                          >
+                            Increase %
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell>
+                          Alert level
+                        </TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {sortedData.length > 0 ? (
+                        sortedData.map((row, index) => {
+                          const alertLevel = getAlertLevel(row.increase_percentage);
+                          
+                          return (
+                            <TableRow
+                              key={index}
+                              sx={{
+                                '&:hover': { backgroundColor: '#f5f5f5' },
+                                '&:nth-of-type(odd)': { backgroundColor: '#fafafa' }
+                              }}
+                            >
+                              <TableCell sx={{ textAlign: 'left' }}>{row.category}</TableCell>
+                              <TableCell sx={{ textAlign: 'center' }}>{row.previous_count_per_day}</TableCell>
+                              <TableCell sx={{ textAlign: 'center' }}>{row.current_count_per_day}</TableCell>
+                              <TableCell
+                                align="center"
+                                sx={{
+                                  color: `${getAlertColor(alertLevel)}.main`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 1
+                                }}
+                              >
+                                <TrendingUpIcon />
+                                {row.increase_percentage.toFixed(1)}%
+                              </TableCell>
+                              <TableCell align="center">
+                                <Chip
+                                  label={alertLevel.toUpperCase()}
+                                  color={getAlertColor(alertLevel)}
+                                  variant={alertLevel === 'high' ? 'filled' : 'outlined'}
+                                  size="small"
+                                />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} sx={{ textAlign: 'center', py: 3 }}>
+                            No Alerts found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
       </Box>
     </Fade>
   );

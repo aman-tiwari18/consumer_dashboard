@@ -213,7 +213,7 @@ const ProportionalBlocks = ({
     return (
         <div >
             <div>
-                zoom in for better view. Click on blocks to filter data.
+                Zoom in for better view. Click on blocks to filter data.
             </div>
             <div>
             {isLoading && (

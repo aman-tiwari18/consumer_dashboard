@@ -8,6 +8,7 @@ export const useDataPointHandler = ({
     handleFilterChange,
     fetchSemanticRCA,
     fetchSpatialData,
+    // fetchCategoryWithCount,
     fetchUserData,
     fetchCategories,
     saveToHistory,
@@ -32,6 +33,7 @@ export const useDataPointHandler = ({
             
             await fetchSpatialData({ ...filters, query: categoryData[0] });
             await fetchCategories(categoryData[1].prompt);
+            // await fetchCategoryWithCount(categoryData[1].prompt)
 
             const searchParams = {
                 ...createSearchParams({ ...filters, query: categoryData[0] }),
@@ -51,6 +53,7 @@ export const useDataPointHandler = ({
         fetchSemanticRCA,
         fetchUserData,
         fetchCategories,
+        // fetchCategoryWithCount,
         saveToHistory,
         setIsLoading
     ]);

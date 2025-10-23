@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import AlertData from "../resources/alerts_with_percentage.json"
-import stateData from "../resources/state_with_complaints.json"
-import companiesData from "../resources/companies_with_complaints.json"
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchCategoryAlerts } from '../features/alerts/categoryAlertSlice';
+import { fetchCompanyDetails } from '../features/company/companyDetailsSlice';
+import AlertData from "../resources/alerts_with_percentage.json";
 
 import {
   Box,
@@ -11,17 +11,27 @@ import {
   Card,
   Grid,
   Fade,
-} from '@mui/material'
-import { useLocalStorage } from '../hooks/useLocalStorage';
+} from '@mui/material';
 import AlertTable from './AlertTable';
-const CACHE_EXPIRATION = 24 * 60 * 60 * 1000; 
-
-
 
 const AlertComponent = (props) => {
-  const [alertData, setAlertData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
+
+  // Redux selectors
+  const { 
+    alertData, 
+    loading: alertLoading, 
+    error: alertError,
+    stats: categoryStats 
+  } = useSelector((state) => state.categoryAlerts);
+
+  const { 
+    companyData, 
+    loading: companyLoading, 
+    error: companyError 
+  } = useSelector((state) => state.companyDetails);
+
+  // Local state
   const [stats, setStats] = useState({
     totalCategories: 0,
     highAlerts: 0,
@@ -29,86 +39,45 @@ const AlertComponent = (props) => {
     lowAlerts: 0
   });
 
-  const [companyData, setCompanyData] = useState([]);
+  const [order, setOrder] = useState('asc');
+  const [orderBy, setOrderBy] = useState('category');
+
+  const loading = alertLoading || companyLoading;
+  const error = alertError || companyError;
 
   console.log('props categoriesCount:', props.data);
 
-  const fetchCompanyDetails = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.post(
-        "https://cdis.iitk.ac.in/consumer_api/get_company_details?sectorname=All&companyname=All&categoryname=All",
-        {},
-        { headers: { Accept: "application/json" } }
-      );
-
-      const companies = res.data || [];
-
-      const results = await Promise.all(
-      companies.slice(0, 10).map(async (company) => {   // 👈 limit to first 10
-      const payload = {
-      query: company.companyname,
-      skip: 0,
-      size: 0,
-      start_date: "2025-01-01",
-      end_date: "2025-03-30",
-      value: 2,
-      CityName: "All",
-      stateName: "All",
-      complaintType: "All",
-      complaintMode: "All",
-      companyName: "All",
-      complaintStatus: "All",
-      threshold: 1.5,
-      complaint_numbers: ["NA"],
-    };
-
-    try {
-      const response = await axios.post(
-        "https://cdis.iitk.ac.in/consumer_api/search",
-        payload,
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      return {
-        companyName: company.companyname,
-        sectorName: company.sectorname,
-        catName: company.catname,
-        counts: response.data?.total_count || 0,
-      };
-    } catch (err) {
-      console.error(`Error fetching count for ${company.companyname}:`, err);
-      return {
-        companyName: company.companyname,
-        sectorName: company.sectorname,
-        catName: company.catname,
-        counts: 0,
-      };
-    }
-  })
-);
-
-
-      setCompanyData(results);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching company details:", error);
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    dispatch(fetchCategoryAlerts({ forceRefresh: false }));
+    dispatch(fetchCompanyDetails({ limit: 10, forceRefresh: false }));
+  }, [dispatch]);
 
   useEffect(() => {
-    fetchCompanyDetails();
-  }, []);
+    if (alertData && alertData.length > 0) {
+      updateStats(alertData);
+    }
+  }, [alertData]);
 
+  const updateStats = (data) => {
+    const totalCategories = data.length;
+    console.log('Updating stats with data:', data);
+    const highAlerts = data.filter(item => item.increase_percentage > 20).length;
+    const mediumAlerts = data.filter(item => item.increase_percentage > 10 && item.increase_percentage <= 20).length;
+    const lowAlerts = data.filter(item => item.increase_percentage <= 10).length;
 
-  const [order, setOrder] = useState('asc');
-  const [orderBy, setOrderBy] = useState('category');
+    setStats({
+      totalCategories,
+      highAlerts,
+      mediumAlerts,
+      lowAlerts
+    });
+  };
+
+  const getAlertLevel = (percentage) => {
+    if (percentage > 20) return 'high';
+    if (percentage > 10) return 'medium';
+    return 'low';
+  };
 
   const handleSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -129,128 +98,15 @@ const AlertComponent = (props) => {
     return 0;
   });
 
-  
-    const sortAlertData = (data) => {
-      return [...data].sort((a, b) => {
-        const alertLevelA = getAlertLevel(a.increase_percentage);
-        const alertLevelB = getAlertLevel(b.increase_percentage);
-  
-        const priority = {
-          'high': 1,
-          'medium': 2,
-          'low': 3
-        };
-  
-        if (priority[alertLevelA] !== priority[alertLevelB]) {
-          return priority[alertLevelA] - priority[alertLevelB];
-        }
-  
-        return b.increase_percentage - a.increase_percentage;
-      });
-    };
-  
-    const [cachedData, setCachedData] = useLocalStorage('categoryAlertData', {
-      data: null,
-      timestamp: null
-    });
-  
-    const isCacheValid = () => {
-      if (!cachedData.timestamp) return false;
-      const now = Date.now();
-      return (now - cachedData.timestamp) < CACHE_EXPIRATION;
-    };
-  
-    const fetchCategoryAlerts = async (forceRefresh = false) => {
-      if (!forceRefresh && isCacheValid() && cachedData.data) {
-        const sortedData = sortAlertData(cachedData.data);
-        setAlertData(sortedData);
-        updateStats(sortedData);
-        // setAlertData(cachedData.data);
-        // updateStats(cachedData.data);
-        return;
-      }
-  
-      setLoading(true);
-      setError(null);
-  
-      try {
-        const response = await axios.post(
-          'https://cdis.iitk.ac.in/consumer_api/get_category_alert',
-          {
-            last_days: 84,
-            given_date: "2017-06-01",
-            value: 1,
-            CityName: "All",
-            stateName: "All",
-            complaintType: "All",
-            complaintMode: "All",
-            companyName: "All",
-            complaintStatus: "All",
-            threshold: 1.3,
-            complaint_numbers: ["NA"]
-          }
-        );
-        const data = response.data;
-        const sortedData = sortAlertData(data);
-        setAlertData(sortedData);
-        updateStats(sortedData);
-  
-        setCachedData({
-          data: data,
-          timestamp: Date.now()
-        });
-      } catch (err) {
-        setError('Failed to fetch category alerts. ' + (err.response?.data?.message || err.message));
-        console.error('Error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-  
-    const updateStats = (data) => {
-      const totalCategories = data.length;
-      console.log('Updating stats with data:', data);
-      const highAlerts = data.filter(item => item.increase_percentage > 20).length;
-      const mediumAlerts = data.filter(item => item.increase_percentage > 10 && item.increase_percentage <= 20).length;
-      const lowAlerts = data.filter(item => item.increase_percentage <= 10).length;
-  
-      setStats({
-        totalCategories,
-        highAlerts,
-        mediumAlerts,
-        lowAlerts
-      });
-    };
-  
-    useEffect(() => {
-      fetchCategoryAlerts();
-    }, []);
-  
-    const getAlertLevel = (percentage) => {
-      if (percentage > 20) return 'high';
-      if (percentage > 10) return 'medium';
-      return 'low';
-    };
-  
-    const getAlertColor = (level) => {
-      switch (level) {
-        case 'high': return 'error';
-        case 'medium': return 'warning';
-        default: return 'success';
-      }
-    };
-  
+  return (
+    <Fade in timeout={500}>
+      <Box sx={{ p: 2 }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
 
-  
-    return (
-      <Fade in timeout={500}>
-        <Box sx={{ p: 2 }}>
-        
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
         <Grid
           container
           spacing={2}
@@ -261,7 +117,7 @@ const AlertComponent = (props) => {
           {[
             {
               title: 'Total Complaints',
-              valueKey: 'totalCount', // comes from props
+              valueKey: 'totalCount',
               bg: 'linear-gradient(135deg, #E3F2FD 0%, #90CAF9 100%)',
               shadow: 'rgba(33, 150, 243, 0.1)',
               hoverShadow: 'rgba(33, 150, 243, 0.2)',
@@ -270,7 +126,7 @@ const AlertComponent = (props) => {
             },
             {
               title: 'Total Categories',
-              valueKey: 'categoriesCount', // comes from props
+              valueKey: 'categoriesCount',
               bg: 'linear-gradient(135deg, #FFF8E1 0%, #FFE082 100%)',
               shadow: 'rgba(255, 193, 7, 0.1)',
               hoverShadow: 'rgba(255, 193, 7, 0.2)',
@@ -279,7 +135,7 @@ const AlertComponent = (props) => {
             },
             {
               title: 'High Alerts',
-              valueKey: 'highAlerts', // comes from stats
+              valueKey: 'highAlerts',
               bg: 'linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%)',
               shadow: 'rgba(244, 67, 54, 0.1)',
               hoverShadow: 'rgba(244, 67, 54, 0.2)',
@@ -328,29 +184,26 @@ const AlertComponent = (props) => {
           ))}
         </Grid>
 
-
-
         <Grid container rowSpacing={1} padding={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
           <Grid size={6}>
-          <AlertTable title= "High Alerts" data = {AlertData}/>
+            <AlertTable title="High Alerts" data={alertData} />
           </Grid>
 
           <Grid size={6}>
-          <AlertTable title= "Categories" data = {props.categoryData}/>
+            <AlertTable title="Categories" data={props.categoryData} />
           </Grid>
 
           <Grid size={6}>
-          <AlertTable title= "Companies" data = {companyData}/>
+            <AlertTable title="Companies" data={companyData} loading={companyLoading} />
           </Grid>
 
           <Grid size={6}>
-          <AlertTable title= "States" data = {props.stateData}/>
+            <AlertTable title="States" data={props.stateData} />
           </Grid>
+        </Grid>
+      </Box>
+    </Fade>
+  );
+};
 
-      </Grid>
-        </Box>
-      </Fade>
-    );
-}
-
-export default AlertComponent
+export default AlertComponent;

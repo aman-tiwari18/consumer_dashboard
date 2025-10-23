@@ -75,6 +75,104 @@ export const apiService = {
             complaint_numbers: params.complaintNumbers || ["NA"]
         });
         return response.data;
+    },
+
+  fetchCategoryWithCount: async (prompt) => {
+  try {
+    const categoryRes = await axios.post(
+      API_ENDPOINTS.CATEGORIES,
+      {
+        input_prompt: prompt,
+        max_retries: 3,
+      },
+      {
+        headers: { accept: 'application/json' },
+      }
+    );
+
+    const categoriesData = categoryRes?.data || {};
+
+    const baseCategories = Object.entries(categoriesData).reduce((acc, [key, value]) => {
+      acc[key] = {
+        prompt: value.prompt || '',
+        count: 0,
+      };
+      return acc;
+    }, {});
+
+    const categoryNames = Object.keys(baseCategories);
+    const updatedCategories = { ...baseCategories };
+
+    let totalComplaints = 0;
+    const batchSize = 5; 
+
+    for (let i = 0; i < categoryNames.length; i += batchSize) {
+      const batch = categoryNames.slice(i, i + batchSize);
+
+      await Promise.all(
+        batch.map(async (categoryName) => {
+          try {
+            const response = await apiService.fetchSemanticRCA({
+              query: categoryName,
+              start_date: '2016-01-01',
+              end_date: '2017-01-01',
+              threshold: 1.3,
+              value: 1,
+              CityName: 'All',
+              stateName: 'All',
+              complaintType: 'All',
+              complaintMode: 'All',
+              companyName: 'All',
+              complaintStatus: 'All',
+              complaintNumbers: ['NA'],
+            });
+
+            let count = 0;
+
+            if (Array.isArray(response)) {
+              count = response.length;
+            } else if (Array.isArray(response?.data)) {
+              count = response.data.length;
+            } else {
+              const responseData = response?.data;
+              count =
+                responseData?.totalCount ??
+                responseData?.total_counts ??
+                responseData?.count ??
+                responseData?.totalcount ??
+                responseData?.total ??
+                0;
+            }
+
+            updatedCategories[categoryName] = {
+              ...updatedCategories[categoryName],
+              count,
+            };
+
+            totalComplaints += count;
+          } catch (err) {
+            console.error(`Failed to fetch count for ${categoryName}:`, err);
+            updatedCategories[categoryName] = {
+              ...updatedCategories[categoryName],
+              count: 0,
+            };
+          }
+        })
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
+
+    return {
+      updatedData: updatedCategories,
+      totalCount: totalComplaints,
+      totalCategories: categoryNames.length,
+    };
+  } catch (error) {
+    console.error('Error in fetchCategoryWithCount:', error);
+    throw error;
+  }
+},
+
         
 };

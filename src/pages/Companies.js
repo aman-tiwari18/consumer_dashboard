@@ -301,7 +301,8 @@ const Companies = () => {
               <TableRow sx={{ backgroundColor: '#f9f9f9' }}>
                 <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'left' }}>
                   <TableSortLabel
-                    active={orderBy === 'companyName'}
+                    // active={orderBy === 'companyName'}
+                    active = {true}
                     direction={orderBy === 'companyName' ? order : 'asc'}
                     onClick={() => handleSort('companyName')}
                   >
@@ -310,7 +311,8 @@ const Companies = () => {
                 </TableCell>
                 <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'center' }}>
                   <TableSortLabel
-                    active={orderBy === 'sectorName'}
+                    // active={orderBy === 'sectorName'}
+                    active = {true}
                     direction={orderBy === 'sectorName' ? order : 'asc'}
                     onClick={() => handleSort('sectorName')}
                   >
@@ -319,7 +321,8 @@ const Companies = () => {
                 </TableCell>
                 <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'center' }}>
                   <TableSortLabel
-                    active={orderBy === 'catName'}
+                    // active={orderBy === 'catName'}
+                    active = {true}
                     direction={orderBy === 'catName' ? order : 'asc'}
                     onClick={() => handleSort('catName')}
                   >
@@ -328,7 +331,8 @@ const Companies = () => {
                 </TableCell>
                 <TableCell sx={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'center' }}>
                   <TableSortLabel
-                    active={orderBy === 'counts'}
+                    // active={orderBy === 'counts'}
+                    active = {true}
                     direction={orderBy === 'counts' ? order : 'asc'}
                     onClick={() => handleSort('counts')}
                   >
@@ -353,7 +357,7 @@ const Companies = () => {
                     <TableCell sx={{ textAlign: 'center' }}>
                       <Chip
                         label={row.counts}
-                        color={row.counts > 50 ? 'error' : row.counts > 20 ? 'warning' : 'success'}
+                        // color={row.counts > 50 ? 'error' : row.counts > 20 ? 'warning' : 'success'}
                         size="small"
                       />
                     </TableCell>

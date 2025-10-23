@@ -6,8 +6,8 @@ export const API_CONSTANTS = {
     
     INITIAL_FILTERS: {
       query: '',
-      startDate: new Date('2016-01-01'),
-      endDate: new Date('2017-01-01'),
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2025-01-01'),
       value: 1,
       threshold: 1.3,
       complaintNumbers: ["NA"]

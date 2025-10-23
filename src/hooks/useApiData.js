@@ -94,6 +94,18 @@ export const useApiData = (defaultStateData = null) => {
     }, [defaultStateData]);
 
 
+    const fetchCategoryWithCount = useCallback(async (prompt, setCategories) => {
+        try {
+            const data = await apiService.fetchCategoryWithCount(prompt);
+            setCategories(data);
+            return data;
+        } catch (error) {
+            console.log('Error fetching categoryWithCount', error)
+            throw error;
+        }
+    },[])
+
+
 
     return {
         totalCounts,
@@ -107,6 +119,7 @@ export const useApiData = (defaultStateData = null) => {
         fetchCategories,
         fetchSemanticRCA,
         fetchSpatialData,
+        fetchCategoryWithCount,
         fetchUserData
     };
 };

@@ -142,19 +142,6 @@ export default function Login() {
           >
             यह पोर्टल भारत सरकार द्वारा सुरक्षित और विश्वसनीय सेवाएं प्रदान करता है। आपकी व्यक्तिगत जानकारी सुरक्षित है।
           </Typography>
-
-          <Box sx={{ marginTop: 3, paddingTop: 2, borderTop: '2px solid #1e40af' }}>
-            <Typography
-              variant="caption"
-              sx={{
-                color: '#138808',
-                fontWeight: 'bold',
-                fontSize: '11px',
-              }}
-            >
-              Made in India
-            </Typography>
-          </Box>
         </Box>
       </Box>
 

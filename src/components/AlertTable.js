@@ -47,7 +47,7 @@ const AlertTable = (props) => {
     const first = data[0];
     if (first.stateName) return 'state';
     if (first.companyName) return 'company';
-    if (first.alertTitle) return 'alert';
+    if (first.category) return 'alert';
     if(first.categoryName) return 'category';
     return 'unknown';
   };
@@ -56,7 +56,7 @@ const AlertTable = (props) => {
     switch (type) {
       case 'state': return 'counts';
       case 'company': return 'counts';
-      case 'alert': return 'increasePercentage';
+      case 'alert': return 'increase_percentage';
       case 'category': return 'counts';
       default: return '';
     }
@@ -66,7 +66,7 @@ const AlertTable = (props) => {
     switch (type) {
       case 'state': return 'stateName';
       case 'company': return 'companyName';
-      case 'alert': return 'alertTitle';
+      case 'alert': return 'category';
       case 'category': return 'categoryName';
       default: return '';
     }

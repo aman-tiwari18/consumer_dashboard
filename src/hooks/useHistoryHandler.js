@@ -8,6 +8,7 @@ export const useHistoryHandler = ({
     fetchSpatialData,
     fetchUserData,
     fetchCategories,
+    // fetchCategoryWithCount,
     setTotalCounts,
     setIsLoading
 }) => {
@@ -32,6 +33,7 @@ export const useHistoryHandler = ({
 
             await fetchUserData(params.complaint_numbers);
             await fetchCategories(params.query);
+            // await fetchCategoryWithCount(params.query);
             setTotalCounts(historyItem.total_counts || 0);
         } catch (error) {
             console.error('Error loading history item:', error);
@@ -45,6 +47,7 @@ export const useHistoryHandler = ({
         fetchSpatialData,
         fetchUserData,
         fetchCategories,
+        // fetchCategoryWithCount,
         setTotalCounts,
         setIsLoading
     ]);
