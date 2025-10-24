@@ -128,7 +128,7 @@ const AlertTable = (props) => {
         sx={{
           position: 'relative',
           minHeight: '100px',
-          maxHeight: '400px',
+          maxHeight: 'calc(100vh - 400px)',
           overflowY: 'auto',
         }}
       >

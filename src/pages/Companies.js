@@ -1,10 +1,12 @@
 // pages/CategoryAlert.js
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import axios from 'axios';
 import SearchHistory from '../components/SearchHistory';
 import { useSearchHistory } from '../hooks/useSearchHistory';
 import { useApiData } from '../hooks/useApiData';
 import { useHistoryHandler } from '../hooks/useHistoryHandler';
+import { useFilters } from '../hooks/useFilters';
 import companiesData from "../resources/companies_with_complaints.json"
 import {
   Box,
@@ -12,6 +14,7 @@ import {
   Alert,
   Chip,
   Fade,
+  Typography,
   Table,
   TableBody,
   TableCell,
@@ -24,7 +27,8 @@ import {
   Button,
   Toolbar as MuiToolbar,
   Stack,
-  TableSortLabel
+  TableSortLabel,
+  TablePagination
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -43,6 +47,14 @@ const Companies = () => {
   const [filterField, setFilterField] = useState('companyName');
   const [orderBy, setOrderBy] = useState('companyName');
   const [order, setOrder] = useState('asc');
+  
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  
+  // Load more functionality
+  const [totalAvailableCompanies, setTotalAvailableCompanies] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const {
     totalCounts,
@@ -59,6 +71,13 @@ const Companies = () => {
   } = useApiData();
 
   const { searchHistory, saveToHistory, clearHistory, deleteHistoryItem } = useSearchHistory();
+  const { filters } = useFilters();
+  
+  // Get company data from Redux store (used when search history exists)
+  const { 
+    companyData: reduxCompanyData, 
+    loading: reduxLoading 
+  } = useSelector((state) => state.companyDetails);
   const { handleHistoryClick } = useHistoryHandler({
     fetchSemanticRCA,
     fetchSpatialData,
@@ -77,55 +96,82 @@ const Companies = () => {
       );
 
       const companies = res.data || [];
+      setTotalAvailableCompanies(companies.length);
 
-      const results = await Promise.all(
-        companies.slice(0, 50).map(async (company) => {
-          const payload = {
-            query: company.companyname,
-            skip: 0,
-            size: 0,
-            start_date: "2025-01-01",
-            end_date: "2025-03-30",
-            value: 2,
-            CityName: "All",
-            stateName: "All",
-            complaintType: "All",
-            complaintMode: "All",
-            companyName: "All",
-            complaintStatus: "All",
-            threshold: 1.5,
-            complaint_numbers: ["NA"],
-          };
-
-          try {
-            const response = await axios.post(
-              "https://cdis.iitk.ac.in/consumer_api/search",
-              payload,
-              {
-                headers: {
-                  Accept: "application/json",
-                  "Content-Type": "application/json",
-                },
-              }
-            );
-
-            return {
+      // Limit companies for better performance - can be increased with "Load More" functionality
+      const maxCompanies = 100; // Reasonable limit for initial load
+      const companiesToProcess = companies.slice(0, maxCompanies);
+      
+      console.log(`Fetching data for ${companiesToProcess.length} companies (limited from ${companies.length} total) - all sectors`);
+      
+      // Process in batches to prevent timeouts
+      const batchSize = 8;
+      const results = [];
+      
+      for (let i = 0; i < companiesToProcess.length; i += batchSize) {
+        const batch = companiesToProcess.slice(i, i + batchSize);
+        console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(companiesToProcess.length / batchSize)} (${batch.length} companies)`);
+        
+        const batchResults = await Promise.all(
+          batch.map(async (company, batchIndex) => {
+            const payload = {
+              query: filters.query || '', // Use current query from filters
+              skip: 0,
+              size: 0,
+              start_date: "2025-01-01",
+              end_date: "2025-03-30",
+              value: 2,
+              CityName: "All",
+              stateName: "All",
+              complaintType: "All",
+              complaintMode: "All",
               companyName: company.companyname,
-              sectorName: company.sectorname,
-              catName: company.catname,
-              counts: response.data?.total_count || 0,
+              complaintStatus: "All",
+              threshold: 1.5,
+              complaint_numbers: ["NA"],
             };
-          } catch (err) {
-            console.error(`Error fetching count for ${company.companyname}:`, err);
-            return {
-              companyName: company.companyname,
-              sectorName: company.sectorname,
-              catName: company.catname,
-              counts: 0,
-            };
-          }
-        })
-      );
+
+            try {
+              const response = await axios.post(
+                "https://cdis.iitk.ac.in/consumer_api/search",
+                payload,
+                {
+                  headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                  },
+                  timeout: 15000, // Reduced to 15 seconds per request
+                }
+              );
+
+              return {
+                companyName: company.companyname,
+                sectorName: company.sectorname,
+                catName: company.catname,
+                counts: response.data?.total_count || 0,
+              };
+            } catch (err) {
+              const errorType = err.code === 'ECONNABORTED' ? 'timeout' : 'network';
+              console.error(`Error fetching count for ${company.companyname} (${errorType}):`, err.message);
+              return {
+                companyName: company.companyname,
+                sectorName: company.sectorname,
+                catName: company.catname,
+                counts: 0,
+                error: errorType,
+              };
+            }
+          })
+        );
+        
+        // Add batch results to main results array
+        results.push(...batchResults);
+        
+        // Add delay between batches to prevent overwhelming the server
+        if (i + batchSize < companiesToProcess.length) {
+          await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay between batches
+        }
+      }
 
       setCompanyData(results);
       setLoading(false);
@@ -137,20 +183,48 @@ const Companies = () => {
   };
 
   useEffect(() => {
-    fetchCompanyDetails();
-  }, []);
+    // Only fetch local company data when search history is empty
+    // When search history exists, we use Redux company data from AlertComponent
+    if (!searchHistory || searchHistory.length === 0) {
+      fetchCompanyDetails();
+    }
+  }, [searchHistory]); // Re-fetch when search history changes
+
+  // Determine which data source to use
+  const currentCompanyData = useMemo(() => {
+    // If search history exists, use Redux company data (filtered by current query)
+    // Otherwise, use local company data (all companies from all sectors)
+    if (searchHistory && searchHistory.length > 0) {
+      return reduxCompanyData || [];
+    }
+    return companyData;
+  }, [searchHistory, reduxCompanyData, companyData]);
+
+  // Determine loading state
+  const isCurrentlyLoading = useMemo(() => {
+    if (searchHistory && searchHistory.length > 0) {
+      return reduxLoading;
+    }
+    return loading;
+  }, [searchHistory, reduxLoading, loading]);
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
-    if (!searchTerm) return companyData;
-    return companyData.filter(row =>
+    if (!searchTerm) return currentCompanyData;
+    return currentCompanyData.filter(row =>
       row[filterField]?.toString().toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [companyData, searchTerm, filterField]);
+  }, [currentCompanyData, searchTerm, filterField]);
 
   const handleClearSearch = () => {
     setSearchTerm('');
+    setPage(0); // Reset pagination when clearing search
   };
+
+  // Reset pagination when search term changes
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm, currentCompanyData]);
 
   const handleSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -182,8 +256,33 @@ const Companies = () => {
     return sorted;
   }, [filteredData, orderBy, order]);
 
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0); // Reset to first page when changing rows per page
+  };
+
+  // Get paginated data
+  const paginatedData = useMemo(() => {
+    const startIndex = page * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return sortedData.slice(startIndex, endIndex);
+  }, [sortedData, page, rowsPerPage]);
+
   const handleRefresh = () => {
-    fetchCompanyDetails();
+    // If search history exists, the data will be refreshed by AlertComponent
+    // If no search history, refresh local company data
+    if (!searchHistory || searchHistory.length === 0) {
+      fetchCompanyDetails();
+    }
+    // Reset pagination when refreshing
+    setPage(0);
+    // Note: When search history exists, the Redux data is managed by AlertComponent
+    // and will be automatically updated when the user interacts with categories
   };
 
   const handleExport = () => {
@@ -221,6 +320,40 @@ const Companies = () => {
           onDeleteHistoryItem={deleteHistoryItem}
         />
 
+        {/* Status Indicator */}
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+          {searchHistory && searchHistory.length > 0 ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Chip 
+                label="Category Filter Active" 
+                color="primary" 
+                size="small" 
+              />
+              <Typography variant="body2" color="text.secondary">
+                Showing top 50 companies for the selected category query. Data is synchronized with AlertComponent.
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Chip 
+                label="All Companies" 
+                color="default" 
+                size="small" 
+              />
+              <Typography variant="body2" color="text.secondary">
+                Showing {currentCompanyData.length} of {totalAvailableCompanies} companies from all sectors.
+              </Typography>
+              {totalAvailableCompanies > currentCompanyData.length && (
+                <Chip 
+                  label={`${totalAvailableCompanies - currentCompanyData.length} more available`} 
+                  color="info" 
+                  size="small" 
+                />
+              )}
+            </Box>
+          )}
+        </Box>
+
         {/* Custom Toolbar */}
         <Paper sx={{ mb: 3 }}>
           <MuiToolbar sx={{ gap: 2, flexWrap: 'wrap', display: 'flex', alignItems: 'center' }}>
@@ -256,7 +389,7 @@ const Companies = () => {
                 variant="outlined"
                 startIcon={<RefreshIcon />}
                 onClick={handleRefresh}
-                disabled={loading}
+                disabled={isCurrentlyLoading}
               >
                 Refresh
               </Button>
@@ -272,14 +405,21 @@ const Companies = () => {
 
             {/* Results Count */}
             <Box sx={{ ml: 'auto', fontSize: '0.9rem', color: 'text.secondary' }}>
-              Showing {sortedData.length} of {companyData.length} companies
+              {sortedData.length > 0 ? (
+                <>
+                  Showing {Math.min((page * rowsPerPage) + 1, sortedData.length)}-{Math.min((page + 1) * rowsPerPage, sortedData.length)} of {sortedData.length} companies
+                  {searchTerm && ` (filtered from ${currentCompanyData.length} total)`}
+                </>
+              ) : (
+                `No companies found${searchTerm ? ' matching search' : ''}`
+              )}
             </Box>
           </MuiToolbar>
         </Paper>
 
         {/* Table */}
         <TableContainer component={Paper} sx={{ position: 'relative' }}>
-          {loading && (
+          {isCurrentlyLoading && (
             <Box sx={{
               position: 'absolute',
               top: 0,
@@ -342,8 +482,8 @@ const Companies = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {sortedData.length > 0 ? (
-                sortedData.map((row, index) => (
+              {paginatedData.length > 0 ? (
+                paginatedData.map((row, index) => (
                   <TableRow
                     key={index}
                     sx={{
@@ -351,15 +491,25 @@ const Companies = () => {
                       '&:nth-of-type(odd)': { backgroundColor: '#fafafa' }
                     }}
                   >
-                    <TableCell sx={{ textAlign: 'left' }}>{row.companyName}</TableCell>
+                    <TableCell sx={{ textAlign: 'left' }}>
+                      {row.companyName}
+                      {row.error && (
+                        <Chip 
+                          label={row.error} 
+                          size="small" 
+                          color="error" 
+                          sx={{ ml: 1, fontSize: '0.7rem', height: '16px' }}
+                        />
+                      )}
+                    </TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{row.sectorName}</TableCell>
                     <TableCell sx={{ textAlign: 'center' }}>{row.catName}</TableCell>
-                    <TableCell sx={{ textAlign: 'center' }}>
-                      <Chip
-                        label={row.counts}
-                        // color={row.counts > 50 ? 'error' : row.counts > 20 ? 'warning' : 'success'}
-                        size="small"
-                      />
+                    <TableCell sx={{ 
+                      textAlign: 'right', 
+                      fontWeight: 'bold',
+                      color: row.error ? 'error.main' : 'inherit'
+                    }}>
+                      {row.counts}
                     </TableCell>
                   </TableRow>
                 ))
@@ -373,6 +523,30 @@ const Companies = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Pagination */}
+        <Paper sx={{ mt: 2 }}>
+          <TablePagination
+            component="div"
+            count={sortedData.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            showFirstButton
+            showLastButton
+            sx={{
+              '& .MuiTablePagination-toolbar': {
+                paddingLeft: 2,
+                paddingRight: 2,
+              },
+              '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                fontSize: '0.875rem',
+              },
+            }}
+          />
+        </Paper>
       </Box>
     </Fade>
   );

@@ -38,7 +38,7 @@ const Dashboard = () => {
     isLoading,
     setIsLoading,
     fetchCategories: fetchCategoriesApi,
-    // fetchCategoryWithCount: fetchcategoryWithCount,
+    fetchCategoryWithCount,
     fetchSemanticRCA,
     fetchUserData,
     fetchSpatialData,
@@ -46,7 +46,7 @@ const Dashboard = () => {
     setStateData,
   } = useApiData(defaultStateData);
 
-   const [dividerPos, setDividerPos] = useState(50); 
+   const [dividerPos, setDividerPos] = useState(55); 
   const containerRef = useRef(null);
   const isDragging = useRef(false);
 
@@ -98,16 +98,18 @@ const Dashboard = () => {
   }, [handleMouseUp]);
 
   const fetchCategories = async (prompt) => {
-    const { updatedData, totalCount } = await fetchCategoriesApi(prompt, setCategories);
-    setCategories(updatedData);
-    setTotalCounts(totalCount);
+    try {
+      const { updatedData, totalCount } = await fetchCategoryWithCount(prompt, setCategories);
+      setCategories(updatedData);
+      setTotalCounts(totalCount);
+    } catch (error) {
+      console.error('fetchCategoryWithCount failed, falling back to fetchCategories:', error);
+      const { updatedData, totalCount } = await fetchCategoriesApi(prompt, setCategories);
+      setCategories(updatedData);
+      setTotalCounts(totalCount);
+    }
   };
 
-//     const fetchCategoryWithCount = async (prompt) => {
-//     const { updatedData, totalCount } = await fetchcategoryWithCount(prompt, setCategories);
-//     setCategories(updatedData);
-//     setTotalCounts(totalCount);
-//   };
 
   const { handleDataPointClick } = useDataPointHandler({
     categories,
@@ -158,122 +160,124 @@ const Dashboard = () => {
 
   const categoriesData = formatCategories(categories);
 
-useEffect(() => {
-  let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
-  const CATEGORY_COUNT = "categoryDataCache";
-  const CACHE_EXPIRY_HOURS = 24;
+    const CATEGORY_COUNT = "categoryDataCache";
+    const CACHE_EXPIRY_HOURS = 24;
 
-  const isCacheValid = (cacheTimestamp) => {
-    if (!cacheTimestamp) return false;
-    const now = Date.now();
-    const age = (now - cacheTimestamp) / (1000 * 60 * 60);
-    return age < CACHE_EXPIRY_HOURS;
-  };
+    const isCacheValid = (cacheTimestamp) => {
+      if (!cacheTimestamp) return false;
+      const now = Date.now();
+      const age = (now - cacheTimestamp) / (1000 * 60 * 60);
+      return age < CACHE_EXPIRY_HOURS;
+    };
 
-  const fetchAllCategories = async () => {
-    if (setIsLoading) setIsLoading(true);
+    const fetchAllCategories = async () => {
+      if (setIsLoading) setIsLoading(true);
 
-    try {
-      const cached = JSON.parse(localStorage.getItem(CATEGORY_COUNT) || "{}");
-      if (cached?.timestamp && isCacheValid(cached.timestamp)) {
-        console.log("⚡ Using cached category data");
-        setCategories(cached.data.categories || {});
-        setTotalComplaintsCounts(cached.data.totalComplaints || 0);
-        if (setTotalCounts) setTotalCounts(cached.data.totalComplaints || 0);
-        if (setIsLoading) setIsLoading(false);
-        return;
-      }
+      try {
+        const cached = JSON.parse(localStorage.getItem(CATEGORY_COUNT) || "{}");
+        if (cached?.timestamp && isCacheValid(cached.timestamp)) {
+          console.log("⚡ Using cached category data");
+          setCategories(cached.data.categories || {});
+          setTotalComplaintsCounts(cached.data.totalComplaints || 0);
+          if (setTotalCounts) setTotalCounts(cached.data.totalComplaints || 0);
+          if (setIsLoading) setIsLoading(false);
+          return;
+        }
 
-      const res = await axios.get("https://cdis.iitk.ac.in/consumer_api/get_all_categories", {
-        headers: { accept: "application/json" },
-      });
-
-      const data = res?.data || [];
-      if (cancelled) return;
-
-      const baseCategories = data.reduce((acc, item) => {
-        acc[item.category] = {
-          prompt: item.categoryPrompt || "",
-          count: 0,
-        };
-        return acc;
-      }, {});
-
-      const categoryNames = Object.keys(baseCategories);
-      setCategories(baseCategories);
-
-      let totalComplaints = 0;
-      const updatedCats = { ...baseCategories };
-
-      const CHUNK_SIZE = 5;
-      for (let i = 0; i < categoryNames.length; i += CHUNK_SIZE) {
-        const chunk = categoryNames.slice(i, i + CHUNK_SIZE);
-
-        const promises = chunk.map(async (categoryName) => {
-          try {
-            const response = await fetchSemanticRCA({
-              query: categoryName,
-              startDate: null,
-              endDate: null,
-              threshold: 1.3,
-              value: 1,
-              CityName: "All",
-              stateName: "All",
-              complaintType: "All",
-              complaintMode: "All",
-              companyName: "All",
-              complaintStatus: "All",
-              complaintNumbers: ["NA"],
-            });
-
-            let count = 0;
-            if (Array.isArray(response)) {
-              count = response.length;
-            } else if (Array.isArray(response?.data)) {
-              count = response.data.length;
-            } else {
-              const r = response?.data;
-              count = r?.totalCount ?? r?.total_counts ?? r?.count ?? r?.totalcount ?? r?.total ?? 0;
-            }
-
-            updatedCats[categoryName].count = count;
-            totalComplaints += count;
-          } catch {
-            updatedCats[categoryName].count = 0;
-          }
+        const res = await axios.get("https://cdis.iitk.ac.in/consumer_api/get_all_categories", {
+          headers: { accept: "application/json" },
         });
 
-        await Promise.all(promises);
-        if (cancelled) break;
+        const data = res?.data || [];
+        if (cancelled) return;
 
-        setCategories({ ...updatedCats });
-        setTotalComplaintsCounts(totalComplaints);
-        if (setTotalCounts) setTotalCounts(totalComplaints);
+        const baseCategories = data.reduce((acc, item) => {
+          acc[item.category] = {
+            prompt: item.categoryPrompt || "",
+            count: 0,
+          };
+          return acc;
+        }, {});
+
+        const categoryNames = Object.keys(baseCategories);
+        setCategories(baseCategories);
+
+        let totalComplaints = 0;
+        const updatedCats = { ...baseCategories };
+
+        const CHUNK_SIZE = 5;
+        for (let i = 0; i < categoryNames.length; i += CHUNK_SIZE) {
+          const chunk = categoryNames.slice(i, i + CHUNK_SIZE);
+
+          const promises = chunk.map(async (categoryName) => {
+            try {
+              const response = await fetchSemanticRCA({
+                query: categoryName,
+                startDate: null,
+                endDate: null,
+                threshold: 1.3,
+                value: 1,
+                CityName: "All",
+                stateName: "All",
+                complaintType: "All",
+                complaintMode: "All",
+                companyName: "All",
+                complaintStatus: "All",
+                complaintNumbers: ["NA"],
+              });
+
+              let count = 0;
+              if (Array.isArray(response)) {
+                count = response.length;
+              } else if (Array.isArray(response?.data)) {
+                count = response.data.length;
+              } else {
+                const r = response?.data;
+                count = r?.totalCount ?? r?.total_counts ?? r?.count ?? r?.totalcount ?? r?.total ?? 0;
+              }
+              // count = response?.total_counts || 0;
+              console.log("count", count);
+              totalComplaints += count;
+              updatedCats[categoryName].count = count;
+              
+            } catch {
+              updatedCats[categoryName].count = 0;
+            }
+          });
+
+          await Promise.all(promises);
+          if (cancelled) break;
+
+          setCategories({ ...updatedCats });
+          setTotalComplaintsCounts(totalComplaints);
+          if (setTotalCounts) setTotalCounts(totalComplaints);
+        }
+
+        localStorage.setItem(
+          CATEGORY_COUNT,
+          JSON.stringify({
+            timestamp: Date.now(),
+            data: {
+              categories: updatedCats,
+              totalComplaints,
+            },
+          })
+        );
+      } catch (err) {
+      } finally {
+        if (!cancelled && setIsLoading) setIsLoading(false);
       }
+    };
 
-      localStorage.setItem(
-        CATEGORY_COUNT,
-        JSON.stringify({
-          timestamp: Date.now(),
-          data: {
-            categories: updatedCats,
-            totalComplaints,
-          },
-        })
-      );
-    } catch (err) {
-    } finally {
-      if (!cancelled && setIsLoading) setIsLoading(false);
-    }
-  };
+    fetchAllCategories();
 
-  fetchAllCategories();
-
-  return () => {
-    cancelled = true;
-  };
-}, [fetchSemanticRCA, setIsLoading, setTotalCounts]);
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchSemanticRCA, setIsLoading, setTotalCounts]);
 
 
   const totalComplaints = categories 
@@ -391,15 +395,19 @@ useEffect(() => {
         <div style={{ 
           width: `${100 - dividerPos}%`, 
           minWidth: '320px',
-          overflow: 'hidden',
+          overflow: 'auto',
           paddingLeft: '0.5rem',
-          transition: isDragging.current ? 'none' : 'width 0.1s ease'
+          transition: isDragging.current ? 'none' : 'width 0.1s ease',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column'
         }}>
           <AlertComponent
             totalCount={totalCounts || totalComplaints}
             categoriesCount={totalCategories}
             categoryData={categoriesData}
             stateData={stateData}
+            currentQuery={filters.query}
           />
         </div>
       </div>

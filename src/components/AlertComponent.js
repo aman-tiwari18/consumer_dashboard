@@ -15,6 +15,7 @@ import {
 import AlertTable from './AlertTable';
 
 const AlertComponent = (props) => {
+  const { currentQuery } = props;
   const dispatch = useDispatch();
 
   // Redux selectors
@@ -48,8 +49,13 @@ const AlertComponent = (props) => {
 
   useEffect(() => {
     dispatch(fetchCategoryAlerts({ forceRefresh: false }));
-    dispatch(fetchCompanyDetails({ limit: 10, forceRefresh: false }));
-  }, [dispatch]);
+    dispatch(fetchCompanyDetails({ 
+      limit: 50, // Fetch top 50 companies for AlertComponent (good balance of data vs performance)
+      forceRefresh: false, 
+      query: currentQuery || '',
+      batchSize: 5 // Smaller batches for AlertComponent
+    }));
+  }, [dispatch, currentQuery]);
 
   useEffect(() => {
     if (alertData && alertData.length > 0) {
@@ -98,7 +104,7 @@ const AlertComponent = (props) => {
 
   return (
     <Fade in timeout={500}>
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2, height: 'auto', minHeight: 'fit-content' }}>
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
