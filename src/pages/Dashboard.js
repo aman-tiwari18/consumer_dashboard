@@ -121,41 +121,59 @@ const Dashboard = () => {
 
   const categoriesData = formatCategories(categories);
 
-  useEffect(() => {
-    let cancelled = false;
+useEffect(() => {
+  let cancelled = false;
 
-    const fetchAllCategories = async () => {
-      if (setIsLoading) setIsLoading(true);
-      
-      try {
-        const res = await axios.get('https://cdis.iitk.ac.in/consumer_api/get_all_categories', {
-          headers: { accept: 'application/json' },
-        });
-        
-        const data = res?.data || [];
-        
-        if (cancelled) return;
+  const CATEGORY_COUNT = "categoryDataCache";
+  const CACHE_EXPIRY_HOURS = 24;
 
-        const baseCategories = data.reduce((acc, item) => {
-          acc[item.category] = {
-            prompt: item.categoryPrompt || '',
-            count: 0,
-          };
-          return acc;
-        }, {});
+  const isCacheValid = (cacheTimestamp) => {
+    if (!cacheTimestamp) return false;
+    const now = Date.now();
+    const age = (now - cacheTimestamp) / (1000 * 60 * 60);
+    return age < CACHE_EXPIRY_HOURS;
+  };
 
-        const categoryNames = Object.keys(baseCategories);
-        // setTotalCategories(categoryNames.length);
-        setCategories(baseCategories);
+  const fetchAllCategories = async () => {
+    if (setIsLoading) setIsLoading(true);
 
-        let totalComplaints = 0;
-        const updatedCats = { ...baseCategories };
+    try {
+      const cached = JSON.parse(localStorage.getItem(CATEGORY_COUNT) || "{}");
+      if (cached?.timestamp && isCacheValid(cached.timestamp)) {
+        console.log("⚡ Using cached category data");
+        setCategories(cached.data.categories || {});
+        setTotalComplaintsCounts(cached.data.totalComplaints || 0);
+        if (setTotalCounts) setTotalCounts(cached.data.totalComplaints || 0);
+        if (setIsLoading) setIsLoading(false);
+        return;
+      }
 
-        for (let i = 0; i < categoryNames.length; i++) {
-          if (cancelled) break;
-          
-          const categoryName = categoryNames[i];
-          
+      const res = await axios.get("https://cdis.iitk.ac.in/consumer_api/get_all_categories", {
+        headers: { accept: "application/json" },
+      });
+
+      const data = res?.data || [];
+      if (cancelled) return;
+
+      const baseCategories = data.reduce((acc, item) => {
+        acc[item.category] = {
+          prompt: item.categoryPrompt || "",
+          count: 0,
+        };
+        return acc;
+      }, {});
+
+      const categoryNames = Object.keys(baseCategories);
+      setCategories(baseCategories);
+
+      let totalComplaints = 0;
+      const updatedCats = { ...baseCategories };
+
+      const CHUNK_SIZE = 5;
+      for (let i = 0; i < categoryNames.length; i += CHUNK_SIZE) {
+        const chunk = categoryNames.slice(i, i + CHUNK_SIZE);
+
+        const promises = chunk.map(async (categoryName) => {
           try {
             const response = await fetchSemanticRCA({
               query: categoryName,
@@ -163,68 +181,63 @@ const Dashboard = () => {
               endDate: null,
               threshold: 1.3,
               value: 1,
-              CityName: 'All',
-              stateName: 'All',
-              complaintType: 'All',
-              complaintMode: 'All',
-              companyName: 'All',
-              complaintStatus: 'All',
-              complaintNumbers: ['NA'],
+              CityName: "All",
+              stateName: "All",
+              complaintType: "All",
+              complaintMode: "All",
+              companyName: "All",
+              complaintStatus: "All",
+              complaintNumbers: ["NA"],
             });
 
             let count = 0;
-            
             if (Array.isArray(response)) {
               count = response.length;
             } else if (Array.isArray(response?.data)) {
               count = response.data.length;
             } else {
-              const responseData = response?.data;
-              count = responseData?.totalCount ?? 
-                     responseData?.total_counts ?? 
-                     responseData?.count ?? 
-                     responseData?.totalcount ?? 
-                     responseData?.total ?? 0;
+              const r = response?.data;
+              count = r?.totalCount ?? r?.total_counts ?? r?.count ?? r?.totalcount ?? r?.total ?? 0;
             }
 
-
-            updatedCats[categoryName] = {
-              ...updatedCats[categoryName],
-              count,
-            };
+            updatedCats[categoryName].count = count;
             totalComplaints += count;
-
-            if ((i + 1) % 5 === 0 || i === categoryNames.length - 1) {
-              setCategories({ ...updatedCats });
-              setTotalComplaintsCounts(totalComplaints);
-              if (setTotalCounts) setTotalCounts(totalComplaints);
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 100));
-
-          } catch (err) {
-            updatedCats[categoryName] = {
-              ...updatedCats[categoryName],
-              count: 0,
-            };
+          } catch {
+            updatedCats[categoryName].count = 0;
           }
-        }
+        });
 
+        await Promise.all(promises);
+        if (cancelled) break;
 
-      } catch (err) {
-        if (!cancelled) {
-        }
-      } finally {
-        if (!cancelled && setIsLoading) setIsLoading(false);
+        setCategories({ ...updatedCats });
+        setTotalComplaintsCounts(totalComplaints);
+        if (setTotalCounts) setTotalCounts(totalComplaints);
       }
-    };
 
-    fetchAllCategories();
+      localStorage.setItem(
+        CATEGORY_COUNT,
+        JSON.stringify({
+          timestamp: Date.now(),
+          data: {
+            categories: updatedCats,
+            totalComplaints,
+          },
+        })
+      );
+    } catch (err) {
+    } finally {
+      if (!cancelled && setIsLoading) setIsLoading(false);
+    }
+  };
 
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchSemanticRCA, setIsLoading, setTotalCounts]);
+  fetchAllCategories();
+
+  return () => {
+    cancelled = true;
+  };
+}, [fetchSemanticRCA, setIsLoading, setTotalCounts]);
+
 
   const totalComplaints = categories 
     ? Object.values(categories).reduce((sum, cat) => sum + (cat.count || 0), 0) 
@@ -232,10 +245,15 @@ const Dashboard = () => {
 
   const totalCategories = Object.keys(categories).length
 
-//       useEffect(() => {
-//     dispatch(fetchAllCategoriesThunk());
-//   }, [dispatch]);
 
+ useEffect(() => {
+    if (searchHistory?.length > 0) {
+      const lastQuery = searchHistory[searchHistory.length - 1];
+      if (lastQuery?.params) {
+        updateFilters(lastQuery.params);
+      }
+    }
+  }, [searchHistory]);
 
 
 

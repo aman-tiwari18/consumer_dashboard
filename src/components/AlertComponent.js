@@ -45,7 +45,6 @@ const AlertComponent = (props) => {
   const loading = alertLoading || companyLoading;
   const error = alertError || companyError;
 
-  console.log('props categoriesCount:', props.data);
 
   useEffect(() => {
     dispatch(fetchCategoryAlerts({ forceRefresh: false }));
@@ -60,7 +59,6 @@ const AlertComponent = (props) => {
 
   const updateStats = (data) => {
     const totalCategories = data.length;
-    console.log('Updating stats with data:', data);
     const highAlerts = data.filter(item => item.increase_percentage > 20).length;
     const mediumAlerts = data.filter(item => item.increase_percentage > 10 && item.increase_percentage <= 20).length;
     const lowAlerts = data.filter(item => item.increase_percentage <= 10).length;

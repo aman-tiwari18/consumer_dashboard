@@ -73,6 +73,8 @@ const SemanticSearch = () => {
         setLoading(true);
         setError(null);
 
+        console.log({filters})
+
         const requestBody = {
             query: filters.query,
             start_date: filters.startDate.toISOString().split('T')[0],
@@ -123,57 +125,20 @@ const SemanticSearch = () => {
         }
     };
 
-    const fetchData2 = async (currentFilters) => {
-        setLoading(true);
-        setError(null);
-
-        const requestBody = {
-            query: currentFilters.query,
-            start_date: currentFilters.startDate.toISOString().split('T')[0],
-            end_date: currentFilters.endDate.toISOString().split('T')[0],
-            value: currentFilters.value,
-            CityName: currentFilters.CityName,
-            stateName: currentFilters.stateName,
-            complaintType: currentFilters.complaintType,
-            complaintMode: currentFilters.complaintMode,
-            companyName: currentFilters.companyName,
-            complaintStatus: currentFilters.complaintStatus,
-            threshold: currentFilters.threshold,
-            complaint_numbers: currentFilters.complaint_numbers
-        };
-
-        try {
-            const [searchResponse, heatmapResponse] = await Promise.all([
-                axios.post('https://cdis.iitk.ac.in/consumer_api/search', {
-                    ...requestBody,
-                    skip: 0,
-                    size: 100
-                }),
-                axios.post('https://cdis.iitk.ac.in/consumer_api/get_spatial_analysis_data',
-                    requestBody
-                )
-            ]);
-
-            console.log("Search Response:", heatmapResponse.data);
-            setSearchResults(searchResponse.data);
-            setHeatmapData(heatmapResponse.data);
-
-        } catch (err) {
-            setError('Failed to fetch data: ' + err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     useEffect(() => {
     if (searchHistory?.length > 0) {
         const lastQuery = searchHistory[searchHistory.length - 1];
-        const queryString = lastQuery?.params?.query || '';
+        const queryParams = lastQuery?.params;
 
-        if (queryString && queryString !== filters.query) {
+        if (queryParams) {
         setFilters((prev) => ({
             ...prev,
-            query: queryString,
+            query: queryParams?.query,
+            startDate: new Date(queryParams?.start_date),
+            endDate: new Date(queryParams?.end_date),
+            threshold: queryParams?.threshold,
+            value : queryParams?.value
         }));
         }
     }
