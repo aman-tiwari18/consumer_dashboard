@@ -193,7 +193,7 @@ const AlertTable = (props) => {
                   sx={{
                     fontSize: '0.8rem',
                     py: 2,
-                    maxWidth: 160,
+                    maxWidth: { xs: 120, sm: 160 },
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',

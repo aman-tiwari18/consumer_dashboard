@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef, useCallback} from 'react';
 import { Box } from '@mui/material';
 import axios from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
@@ -50,15 +50,52 @@ const Dashboard = () => {
   const containerRef = useRef(null);
   const isDragging = useRef(false);
 
-  const handleMouseDown = () => (isDragging.current = true);
-  const handleMouseUp = () => (isDragging.current = false);
+  const handleMouseDown = useCallback((e) => {
+    e.preventDefault();
+    isDragging.current = true;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+  }, []);
+  
+  const handleMouseUp = useCallback(() => {
+    isDragging.current = false;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+  }, []);
 
-  const handleMouseMove = (e) => {
-    if (!isDragging.current) return;
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging.current || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const newPos = ((e.clientX - rect.left) / rect.width) * 100;
-    if (newPos > 10 && newPos < 90) setDividerPos(newPos); 
-  };
+    // Constrain between 20% and 80% for better usability
+    const constrainedPos = Math.max(20, Math.min(80, newPos));
+    setDividerPos(constrainedPos);
+  }, []);
+
+  // Cleanup effect for mouse events
+  useEffect(() => {
+    const cleanup = () => {
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      isDragging.current = false;
+    };
+
+    // Add global mouse up listener to handle cases where mouse is released outside the container
+    const globalMouseUp = () => {
+      if (isDragging.current) {
+        handleMouseUp();
+      }
+    };
+
+    document.addEventListener('mouseup', globalMouseUp);
+    window.addEventListener('beforeunload', cleanup);
+
+    return () => {
+      document.removeEventListener('mouseup', globalMouseUp);
+      window.removeEventListener('beforeunload', cleanup);
+      cleanup();
+    };
+  }, [handleMouseUp]);
 
   const fetchCategories = async (prompt) => {
     const { updatedData, totalCount } = await fetchCategoriesApi(prompt, setCategories);
@@ -277,17 +314,87 @@ useEffect(() => {
         />
       </Box>
 
-      <div style={{ display: 'flex', flexDirection: 'row', padding: '0 2rem', justifyContent: 'center', alignContent: 'center' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div 
+        ref={containerRef}
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'row', 
+          padding: '0 2rem', 
+          height: 'calc(100vh - 200px)',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        {/* Left Panel - ProportionalBlocks */}
+        <div style={{ 
+          width: `${dividerPos}%`, 
+          minWidth: '320px',
+          maxWidth: '75%',
+          overflow: 'hidden',
+          paddingRight: '0.5rem',
+          transition: isDragging.current ? 'none' : 'width 0.1s ease',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%'
+        }}>
           <ProportionalBlocks
             categories={categories}
             totalCounts={totalCounts || totalComplaints}
             onDataPointClick={handleDataPointClick}
             isLoading={isLoading}
+            containerWidth={dividerPos}
           />
         </div>
 
-        <div style={{ flex: 1 }}>
+        {/* Resizable Divider */}
+        <div
+          style={{
+            width: '8px',
+            cursor: 'col-resize',
+            backgroundColor: isDragging.current ? '#2196F3' : '#e0e0e0',
+            borderRadius: '4px',
+            margin: '0 4px',
+            position: 'relative',
+            transition: isDragging.current ? 'none' : 'all 0.2s ease',
+            boxShadow: isDragging.current ? '0 0 8px rgba(33, 150, 243, 0.3)' : 'none'
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseEnter={(e) => {
+            if (!isDragging.current) {
+              e.target.style.backgroundColor = '#bdbdbd';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isDragging.current) {
+              e.target.style.backgroundColor = '#e0e0e0';
+            }
+          }}
+        >
+          {/* Drag Handle Visual Indicator */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '4px',
+            height: '40px',
+            backgroundColor: '#9e9e9e',
+            borderRadius: '2px',
+            opacity: 0.7
+          }} />
+        </div>
+
+        {/* Right Panel - AlertComponent */}
+        <div style={{ 
+          width: `${100 - dividerPos}%`, 
+          minWidth: '320px',
+          overflow: 'hidden',
+          paddingLeft: '0.5rem',
+          transition: isDragging.current ? 'none' : 'width 0.1s ease'
+        }}>
           <AlertComponent
             totalCount={totalCounts || totalComplaints}
             categoriesCount={totalCategories}

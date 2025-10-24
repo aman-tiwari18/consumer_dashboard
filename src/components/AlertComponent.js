@@ -182,20 +182,20 @@ const AlertComponent = (props) => {
           ))}
         </Grid>
 
-        <Grid container rowSpacing={1} padding={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
-          <Grid size={6}>
+        <Grid container rowSpacing={1} padding={1} columnSpacing={{ xs: 1, sm: 1, md: 2 }}>
+          <Grid xs={12} sm={6} size={6}>
             <AlertTable title="High Alerts" data={alertData} />
           </Grid>
 
-          <Grid size={6}>
+          <Grid xs={12} sm={6} size={6}>
             <AlertTable title="Categories" data={props.categoryData} />
           </Grid>
 
-          <Grid size={6}>
+          <Grid xs={12} sm={6} size={6}>
             <AlertTable title="Companies" data={companyData} loading={companyLoading} />
           </Grid>
 
-          <Grid size={6}>
+          <Grid xs={12} sm={6} size={6}>
             <AlertTable title="States" data={props.stateData} />
           </Grid>
         </Grid>

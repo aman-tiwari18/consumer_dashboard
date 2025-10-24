@@ -5,7 +5,8 @@ const ProportionalBlocks = ({
     categories,
     totalCounts,
     onDataPointClick,
-    isLoading
+    isLoading,
+    containerWidth = 50
 }) => {
     const svgRef = useRef(null);
     const tooltipRef = useRef(null);
@@ -54,8 +55,15 @@ const ProportionalBlocks = ({
     };
 
 
-    const width = window.innerWidth * 0.78;
-    const height = window.innerHeight*1.4;
+    // Calculate responsive dimensions based on container width
+    const baseWidth = Math.max(320, (window.innerWidth * containerWidth / 100) - 120);
+    const width = baseWidth;
+    // Maintain aspect ratio and ensure good height regardless of width
+    const aspectRatio = 0.75; // height/width ratio
+    const minHeight = 450;
+    const maxHeight = Math.max(minHeight, window.innerHeight * 0.8);
+    const calculatedHeight = Math.max(minHeight, baseWidth * aspectRatio);
+    const height = Math.min(calculatedHeight, maxHeight);
 
 
     useEffect(() => {
@@ -157,42 +165,90 @@ const ProportionalBlocks = ({
             .style("pointer-events", "none");
 
         const maxArea = d3.max(root.leaves(), d => (d.x1 - d.x0) * (d.y1 - d.y0));
-        const fontScale = d3.scaleLinear().domain([0, maxArea]).range([10, 28]);
-        const lengthScale = d3.scaleLinear().domain([0, maxArea]).range([10, 100]);
-        const yScale = d3.scaleLinear().domain([0, maxArea]).range([12, 40]);
+        const minArea = d3.min(root.leaves(), d => (d.x1 - d.x0) * (d.y1 - d.y0));
+        
+        // Improved font scaling - smaller and more proportional
+        const fontScale = d3.scaleLinear()
+            .domain([minArea, maxArea])
+            .range([8, 18])
+            .clamp(true);
+        
+        // Better text length calculation
+        const lengthScale = d3.scaleLinear()
+            .domain([minArea, maxArea])
+            .range([8, 60])
+            .clamp(true);
+        
+        // Improved vertical positioning
+        const yScale = d3.scaleLinear()
+            .domain([minArea, maxArea])
+            .range([14, 28])
+            .clamp(true);
 
         text.append("tspan")
-            .attr("x", 4)
-            .attr("y", d => yScale((d.x1 - d.x0) * (d.y1 - d.y0)))
-            .attr("fill", "white")
-            .attr("font-weight", "bold")
-            .style("text-shadow", "0 1px 3px rgba(0,0,0,0.5)")
-            .style("font-size", d => `${fontScale((d.x1 - d.x0) * (d.y1 - d.y0))}px`)
-            .text(d => {
-                const area = (d.x1 - d.x0) * (d.y1 - d.y0);
-                const maxLength = Math.floor(lengthScale(area));
-                const name = d.data.name;
-                return name.length > maxLength ? name.substring(0, maxLength) + "..." : name;
-            })
-            .style("text-transform", "capitalize");
-
-        text.append("tspan")
-            .attr("x", 4)
+            .attr("x", 6)
             .attr("y", d => {
                 const area = (d.x1 - d.x0) * (d.y1 - d.y0);
-                return yScale(area) + fontScale(area) + 4;
+                return yScale(area);
             })
             .attr("fill", "white")
             .attr("font-weight", "600")
-            .style("text-shadow", "0 1px 3px rgba(0,0,0,0.5)")
-            .style("font-size", d => `${fontScale((d.x1 - d.x0) * (d.y1 - d.y0)) * 0.8}px`)
+            .style("text-shadow", "0 1px 4px rgba(0,0,0,0.7)")
+            .style("font-size", d => {
+                const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+                const fontSize = fontScale(area);
+                return `${fontSize}px`;
+            })
             .text(d => {
                 const area = (d.x1 - d.x0) * (d.y1 - d.y0);
-                return area > maxArea * 0.05 ? `${((d.value / root.value) * 100).toFixed(1)}%` : "";
-            });
+                const width = d.x1 - d.x0;
+                const height = d.y1 - d.y0;
+                
+                // Only show text if block is large enough
+                if (width < 40 || height < 25) return "";
+                
+                const maxLength = Math.floor(lengthScale(area));
+                const name = d.data.name;
+                
+                // Better text truncation
+                if (name.length > maxLength) {
+                    return maxLength > 3 ? name.substring(0, maxLength - 3) + "..." : "";
+                }
+                return name;
+            })
+            .style("text-transform", "capitalize")
+            .style("font-family", "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif");
+
+        text.append("tspan")
+            .attr("x", 6)
+            .attr("y", d => {
+                const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+                const fontSize = fontScale(area);
+                return yScale(area) + fontSize + 6;
+            })
+            .attr("fill", "rgba(255, 255, 255, 0.9)")
+            .attr("font-weight", "500")
+            .style("text-shadow", "0 1px 3px rgba(0,0,0,0.6)")
+            .style("font-size", d => {
+                const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+                const fontSize = fontScale(area) * 0.75;
+                return `${Math.max(fontSize, 8)}px`;
+            })
+            .text(d => {
+                const area = (d.x1 - d.x0) * (d.y1 - d.y0);
+                const width = d.x1 - d.x0;
+                const height = d.y1 - d.y0;
+                
+                // Only show percentage if block is large enough and significant
+                if (width < 60 || height < 40 || area < maxArea * 0.03) return "";
+                
+                const percentage = ((d.value / root.value) * 100).toFixed(1);
+                return `${percentage}%`;
+            })
+            .style("font-family", "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif");
 
 
-    }, [chartData, onDataPointClick]);
+    }, [chartData, onDataPointClick, containerWidth, width, height]);
 
     if (!categories || Object.keys(categories).length === 0) {
         return (
@@ -242,12 +298,14 @@ const ProportionalBlocks = ({
 
 
             <div style={{ 
-                maxWidth: '100vw', 
+                width: '100%',
+                height: 'auto',
                 margin: '0 auto',
                 border: '1px solid #e0e0e0',
-                borderRadius: '4px',
+                borderRadius: '8px',
                 overflow: 'hidden',
-                backgroundColor: '#ffffff'
+                backgroundColor: '#ffffff',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
             }}>
                 <svg 
                     ref={svgRef}
